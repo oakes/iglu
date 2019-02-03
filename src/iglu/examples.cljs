@@ -265,6 +265,12 @@
     0 sy 0
     0 0 1))
 
+(defn projection-matrix [width height]
+  (array
+    (/ 2 width) 0 0
+    0 (/ -2 height) 0
+    -1 1 1))
+
 (defn multiply-matrices [dim m1 m2]
   (let [m1 (clj->js (partition dim m1))
         m2 (clj->js (partition dim m2))
@@ -282,25 +288,10 @@
   
   in vec2 a_position;
   
-  uniform vec2 u_resolution;
-  
   uniform mat3 u_matrix;
   
   void main() {
-    vec2 position = (u_matrix * vec3(a_position, 1)).xy;
-  
-    // convert the position from pixels to 0.0 to 1.0
-    vec2 zeroToOne = position / u_resolution;
- 
-    // convert from 0->1 to 0->2
-    vec2 zeroToTwo = zeroToOne * 2.0;
- 
-    // convert from 0->2 to -1->+1 (clipspace)
-    vec2 clipSpace = zeroToTwo - 1.0;
-  
-    // gl_Position is a special variable a vertex shader
-    // is responsible for setting
-    gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
+    gl_Position = vec4((u_matrix * vec3(a_position, 1)).xy, 0, 1);
   }")
 
 (def transformation-fragment-shader-source
@@ -337,7 +328,6 @@
                          size 2, type gl.FLOAT, normalize false, stride 0, offset 0
                          _ (.vertexAttribPointer gl pos-attrib-location size type normalize stride offset)]
                      pos-buffer)
-        resolution-location (.getUniformLocation gl program "u_resolution")
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
@@ -356,10 +346,10 @@
     (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
     (.useProgram gl program)
     (.bindVertexArray gl vao)
-    (.uniform2f gl resolution-location gl.canvas.width gl.canvas.height)
     (.uniform4f gl color-location 1 0 0.5 1)
     (.uniformMatrix3fv gl matrix-location false
-      (translation-matrix x y))
+      (->> (projection-matrix gl.canvas.width gl.canvas.height)
+           (multiply-matrices 3 (translation-matrix x y))))
     (.drawArrays gl gl.TRIANGLES 0 18)))
 
 (defn translation-init [canvas]
@@ -394,7 +384,6 @@
                          size 2, type gl.FLOAT, normalize false, stride 0, offset 0
                          _ (.vertexAttribPointer gl pos-attrib-location size type normalize stride offset)]
                      pos-buffer)
-        resolution-location (.getUniformLocation gl program "u_resolution")
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
@@ -413,10 +402,10 @@
     (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
     (.useProgram gl program)
     (.bindVertexArray gl vao)
-    (.uniform2f gl resolution-location gl.canvas.width gl.canvas.height)
     (.uniform4f gl color-location 1 0 0.5 1)
     (.uniformMatrix3fv gl matrix-location false
-      (->> (translation-matrix tx ty)
+      (->> (projection-matrix gl.canvas.width gl.canvas.height)
+           (multiply-matrices 3 (translation-matrix tx ty))
            (multiply-matrices 3 (rotation-matrix r))
            ;; make it rotate around its center
            (multiply-matrices 3 (translation-matrix -50 -75))))
@@ -458,7 +447,6 @@
                          size 2, type gl.FLOAT, normalize false, stride 0, offset 0
                          _ (.vertexAttribPointer gl pos-attrib-location size type normalize stride offset)]
                      pos-buffer)
-        resolution-location (.getUniformLocation gl program "u_resolution")
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
@@ -477,10 +465,10 @@
     (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
     (.useProgram gl program)
     (.bindVertexArray gl vao)
-    (.uniform2f gl resolution-location gl.canvas.width gl.canvas.height)
     (.uniform4f gl color-location 1 0 0.5 1)
     (.uniformMatrix3fv gl matrix-location false
-      (->> (translation-matrix tx ty)
+      (->> (projection-matrix gl.canvas.width gl.canvas.height)
+           (multiply-matrices 3 (translation-matrix tx ty))
            (multiply-matrices 3 (rotation-matrix 0))
            (multiply-matrices 3 (scaling-matrix sx sy))))
     (.drawArrays gl gl.TRIANGLES 0 18)))
@@ -521,7 +509,6 @@
                          size 2, type gl.FLOAT, normalize false, stride 0, offset 0
                          _ (.vertexAttribPointer gl pos-attrib-location size type normalize stride offset)]
                      pos-buffer)
-        resolution-location (.getUniformLocation gl program "u_resolution")
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
@@ -540,10 +527,9 @@
     (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
     (.useProgram gl program)
     (.bindVertexArray gl vao)
-    (.uniform2f gl resolution-location gl.canvas.width gl.canvas.height)
     (.uniform4f gl color-location 1 0 0.5 1)
     (loop [i 0
-           matrix (array 1 0 0, 0 1 0, 0 0 1)]
+           matrix (projection-matrix gl.canvas.width gl.canvas.height)]
       (when (< i 5)
         (let [matrix (->> matrix
                           (multiply-matrices 3 (translation-matrix tx ty))
