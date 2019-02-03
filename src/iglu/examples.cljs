@@ -417,7 +417,9 @@
     (.uniform4f gl color-location 1 0 0.5 1)
     (.uniformMatrix3fv gl matrix-location false
       (->> (translation-matrix tx ty)
-           (multiply-matrices 3 (rotation-matrix r))))
+           (multiply-matrices 3 (rotation-matrix r))
+           ;; make it rotate around its center
+           (multiply-matrices 3 (translation-matrix -50 -75))))
     (.drawArrays gl gl.TRIANGLES 0 18)))
 
 (defn rotation-init [canvas]
