@@ -348,7 +348,7 @@
     (.bindVertexArray gl vao)
     (.uniform4f gl color-location 1 0 0.5 1)
     (.uniformMatrix3fv gl matrix-location false
-      (->> (projection-matrix gl.canvas.width gl.canvas.height)
+      (->> (projection-matrix gl.canvas.clientWidth gl.canvas.clientHeight)
            (multiply-matrices 3 (translation-matrix x y))))
     (.drawArrays gl gl.TRIANGLES 0 18)))
 
@@ -404,7 +404,7 @@
     (.bindVertexArray gl vao)
     (.uniform4f gl color-location 1 0 0.5 1)
     (.uniformMatrix3fv gl matrix-location false
-      (->> (projection-matrix gl.canvas.width gl.canvas.height)
+      (->> (projection-matrix gl.canvas.clientWidth gl.canvas.clientHeight)
            (multiply-matrices 3 (translation-matrix tx ty))
            (multiply-matrices 3 (rotation-matrix r))
            ;; make it rotate around its center
@@ -467,7 +467,7 @@
     (.bindVertexArray gl vao)
     (.uniform4f gl color-location 1 0 0.5 1)
     (.uniformMatrix3fv gl matrix-location false
-      (->> (projection-matrix gl.canvas.width gl.canvas.height)
+      (->> (projection-matrix gl.canvas.clientWidth gl.canvas.clientHeight)
            (multiply-matrices 3 (translation-matrix tx ty))
            (multiply-matrices 3 (rotation-matrix 0))
            (multiply-matrices 3 (scaling-matrix sx sy))))
@@ -529,7 +529,7 @@
     (.bindVertexArray gl vao)
     (.uniform4f gl color-location 1 0 0.5 1)
     (loop [i 0
-           matrix (projection-matrix gl.canvas.width gl.canvas.height)]
+           matrix (projection-matrix gl.canvas.clientWidth gl.canvas.clientHeight)]
       (when (< i 5)
         (let [matrix (->> matrix
                           (multiply-matrices 3 (translation-matrix tx ty))
