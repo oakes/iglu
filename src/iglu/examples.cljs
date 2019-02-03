@@ -45,7 +45,7 @@
       (js/Float32Array. (array x1 y1, x2 y1, x1 y2, x1 y2, x2 y1, x2 y2))
       gl.STATIC_DRAW)))
 
-(def fundamentals-vertex-shader-source
+(def rand-rects-vertex-shader-source
   "#version 300 es
   
   // an attribute is an input (in) to a vertex shader.
@@ -70,7 +70,7 @@
     gl_Position = vec4(clipSpace, 0, 1);
   }")
 
-(def fundamentals-fragment-shader-source
+(def rand-rects-fragment-shader-source
   "#version 300 es
   
   // fragment shaders don't have a default precision so we need
@@ -87,11 +87,11 @@
     outColor = u_color;
   }")
 
-(defn fundamentals-init [canvas]
+(defn rand-rects-init [canvas]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
-                  fundamentals-vertex-shader-source
-                  fundamentals-fragment-shader-source)
+                  rand-rects-vertex-shader-source
+                  rand-rects-fragment-shader-source)
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
@@ -117,10 +117,10 @@
       (.uniform4f gl color-location (rand) (rand) (rand) 1)
       (.drawArrays gl gl.TRIANGLES 0 6))))
 
-(defexample iglu.core/fundamentals
+(defexample iglu.core/rand-rects
   {:with-card card}
-  (defonce fundamentals-canvas (iglu.examples/create-canvas card))
-  (iglu.examples/fundamentals-init fundamentals-canvas))
+  (defonce rand-rects-canvas (iglu.examples/create-canvas card))
+  (iglu.examples/rand-rects-init rand-rects-canvas))
 
 (def image-vertex-shader-source
   "#version 300 es
