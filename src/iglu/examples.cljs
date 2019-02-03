@@ -46,6 +46,8 @@
       (js/Float32Array. (array x1 y1, x2 y1, x1 y2, x1 y2, x2 y1, x2 y2))
       gl.STATIC_DRAW)))
 
+;; rand-rects
+
 (def rand-rects-vertex-shader-source
   "#version 300 es
   
@@ -120,8 +122,10 @@
 
 (defexample iglu.core/rand-rects
   {:with-card card}
-  (defonce rand-rects-canvas (iglu.examples/create-canvas card))
-  (iglu.examples/rand-rects-init rand-rects-canvas))
+  (->> (iglu.examples/create-canvas card)
+       (iglu.examples/rand-rects-init)))
+
+;; image
 
 (def image-vertex-shader-source
   "#version 300 es
@@ -236,8 +240,10 @@
 
 (defexample iglu.core/image
   {:with-card card}
-  (defonce image-canvas (iglu.examples/create-canvas card))
-  (iglu.examples/image-init image-canvas))
+  (->> (iglu.examples/create-canvas card)
+       (iglu.examples/image-init)))
+
+;; translation
 
 (def translation-vertex-shader-source
   "#version 300 es
@@ -338,8 +344,10 @@
 
 (defexample iglu.core/translation
   {:with-card card}
-  (defonce translation-canvas (iglu.examples/create-canvas card))
-  (iglu.examples/translation-init translation-canvas))
+  (->> (iglu.examples/create-canvas card)
+       (iglu.examples/translation-init)))
+
+;; rotation
 
 (def rotation-vertex-shader-source
   "#version 300 es
@@ -453,7 +461,131 @@
 
 (defexample iglu.core/rotation
   {:with-card card}
-  (defonce rotation-canvas (iglu.examples/create-canvas card))
-  (iglu.examples/rotation-init rotation-canvas))
+  (->> (iglu.examples/create-canvas card)
+       (iglu.examples/rotation-init)))
+
+;; scale
+
+(def scale-vertex-shader-source
+  "#version 300 es
+  
+  // an attribute is an input (in) to a vertex shader.
+  // It will receive data from a buffer
+  in vec2 a_position;
+  
+  uniform vec2 u_resolution;
+  
+  // translation to add to position
+  uniform vec2 u_translation;
+  
+  uniform vec2 u_rotation;
+  
+  uniform vec2 u_scale;
+  
+  // all shaders have a main function
+  void main() {
+    // Scale the positon
+    vec2 scaledPosition = a_position * u_scale;
+  
+    // Rotate the position
+    vec2 rotatedPosition = vec2(
+       scaledPosition.x * u_rotation.y + scaledPosition.y * u_rotation.x,
+       scaledPosition.y * u_rotation.y - scaledPosition.x * u_rotation.x);
+  
+    // Add in the translation  
+    vec2 position = rotatedPosition + u_translation;
+  
+    // convert the position from pixels to 0.0 to 1.0
+    vec2 zeroToOne = position / u_resolution;
+ 
+    // convert from 0->1 to 0->2
+    vec2 zeroToTwo = zeroToOne * 2.0;
+ 
+    // convert from 0->2 to -1->+1 (clipspace)
+    vec2 clipSpace = zeroToTwo - 1.0;
+  
+    // gl_Position is a special variable a vertex shader
+    // is responsible for setting
+    gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
+  }")
+
+(def scale-fragment-shader-source
+  "#version 300 es
+  
+  // fragment shaders don't have a default precision so we need
+  // to pick one. mediump is a good default. It means 'medium precision'
+  precision mediump float;
+  
+  uniform vec4 u_color;
+  
+  // we need to declare an output for the fragment shader
+  out vec4 outColor;
+  
+  void main() {
+    // Just set the output to a constant redish-purple
+    outColor = u_color;
+  }")
+
+(defn scale-render [canvas {:keys [tx ty sx sy]}]
+  (let [gl (.getContext canvas "webgl2")
+        program (create-program gl
+                  scale-vertex-shader-source
+                  scale-fragment-shader-source)
+        vao (let [vao (.createVertexArray gl)]
+              (.bindVertexArray gl vao)
+              vao)
+        pos-buffer (let [pos-attrib-location (.getAttribLocation gl program "a_position")
+                         pos-buffer (.createBuffer gl)
+                         _ (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
+                         _ (.enableVertexAttribArray gl pos-attrib-location)
+                         size 2, type gl.FLOAT, normalize false, stride 0, offset 0
+                         _ (.vertexAttribPointer gl pos-attrib-location size type normalize stride offset)]
+                     pos-buffer)
+        resolution-location (.getUniformLocation gl program "u_resolution")
+        color-location (.getUniformLocation gl program "u_color")
+        translation-location (.getUniformLocation gl program "u_translation")
+        rotation-location (.getUniformLocation gl program "u_rotation")
+        scale-location (.getUniformLocation gl program "u_scale")]
+    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
+    (.bufferData gl gl.ARRAY_BUFFER
+      (js/Float32Array. (array
+                          ;; left column
+                          0 0, 30 0, 0 150, 0 150, 30 0, 30 150
+                          ;; top rung
+                          30 0, 100 0, 30 30, 30 30, 100 0, 100 30
+                          ;; middle rung
+                          30 60, 67 60, 30 90, 30 90, 67 60, 67 90))
+      gl.STATIC_DRAW)
+    (resize-canvas canvas)
+    (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
+    (.clearColor gl 0 0 0 0)
+    (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
+    (.useProgram gl program)
+    (.bindVertexArray gl vao)
+    (.uniform2f gl resolution-location gl.canvas.width gl.canvas.height)
+    (.uniform4f gl color-location 1 0 0.5 1)
+    (.uniform2fv gl translation-location (array tx ty))
+    (.uniform2fv gl rotation-location (array 0 1))
+    (.uniform2fv gl scale-location (array sx sy))
+    (.drawArrays gl gl.TRIANGLES 0 18)))
+
+(defn scale-init [canvas]
+  (let [tx 100
+        ty 100
+        *state (atom {:tx tx :ty ty :sx 1 :sy 1})]
+    (events/listen js/window "mousemove"
+      (fn [event]
+        (let [bounds (.getBoundingClientRect canvas)
+              sx (/ (- (.-clientX event) (.-left bounds) tx)
+                    (.-width bounds))
+              sy (/ (- (.-clientY event) (.-top bounds) ty)
+                    (.-height bounds))]
+          (scale-render canvas (swap! *state assoc :sx sx :sy sy)))))
+    (scale-render canvas @*state)))
+
+(defexample iglu.core/scale
+  {:with-card card}
+  (->> (iglu.examples/create-canvas card)
+       (iglu.examples/scale-init)))
 
 
