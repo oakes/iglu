@@ -502,4 +502,71 @@
   (->> (iglu.examples/create-canvas card)
        (iglu.examples/scale-init)))
 
+;; rotation-multi
+
+(defn rotation-multi-render [canvas {:keys [tx ty r]}]
+  (let [gl (.getContext canvas "webgl2")
+        program (create-program gl
+                  transformation-vertex-shader-source
+                  transformation-fragment-shader-source)
+        vao (let [vao (.createVertexArray gl)]
+              (.bindVertexArray gl vao)
+              vao)
+        pos-buffer (let [pos-attrib-location (.getAttribLocation gl program "a_position")
+                         pos-buffer (.createBuffer gl)
+                         _ (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
+                         _ (.enableVertexAttribArray gl pos-attrib-location)
+                         size 2, type gl.FLOAT, normalize false, stride 0, offset 0
+                         _ (.vertexAttribPointer gl pos-attrib-location size type normalize stride offset)]
+                     pos-buffer)
+        resolution-location (.getUniformLocation gl program "u_resolution")
+        color-location (.getUniformLocation gl program "u_color")
+        matrix-location (.getUniformLocation gl program "u_matrix")]
+    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
+    (.bufferData gl gl.ARRAY_BUFFER
+      (js/Float32Array. (array
+                          ;; left column
+                          0 0, 30 0, 0 150, 0 150, 30 0, 30 150
+                          ;; top rung
+                          30 0, 100 0, 30 30, 30 30, 100 0, 100 30
+                          ;; middle rung
+                          30 60, 67 60, 30 90, 30 90, 67 60, 67 90))
+      gl.STATIC_DRAW)
+    (resize-canvas canvas)
+    (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
+    (.clearColor gl 0 0 0 0)
+    (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
+    (.useProgram gl program)
+    (.bindVertexArray gl vao)
+    (.uniform2f gl resolution-location gl.canvas.width gl.canvas.height)
+    (.uniform4f gl color-location 1 0 0.5 1)
+    (loop [i 0
+           matrix (array 1 0 0, 0 1 0, 0 0 1)]
+      (when (< i 5)
+        (let [matrix (->> matrix
+                          (multiply-matrices 3 (translation-matrix tx ty))
+                          (multiply-matrices 3 (rotation-matrix r)))]
+          (.uniformMatrix3fv gl matrix-location false matrix)
+          (.drawArrays gl gl.TRIANGLES 0 18)
+          (recur (inc i) matrix))))))
+
+(defn rotation-multi-init [canvas]
+  (let [tx 100
+        ty 100
+        *state (atom {:tx tx :ty ty :r 0})]
+    (events/listen js/window "mousemove"
+      (fn [event]
+        (let [bounds (.getBoundingClientRect canvas)
+              rx (/ (- (.-clientX event) (.-left bounds) tx)
+                    (.-width bounds))
+              ry (/ (- (.-clientY event) (.-top bounds) ty)
+                    (.-height bounds))]
+          (rotation-multi-render canvas (swap! *state assoc :r (Math/atan2 rx ry))))))
+    (rotation-multi-render canvas @*state)))
+
+(defexample iglu.core/rotation-multi
+  {:with-card card}
+  (->> (iglu.examples/create-canvas card)
+       (iglu.examples/rotation-multi-init)))
+
 
