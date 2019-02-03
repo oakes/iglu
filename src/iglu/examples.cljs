@@ -341,4 +341,119 @@
   (defonce translation-canvas (iglu.examples/create-canvas card))
   (iglu.examples/translation-init translation-canvas))
 
+(def rotation-vertex-shader-source
+  "#version 300 es
+  
+  // an attribute is an input (in) to a vertex shader.
+  // It will receive data from a buffer
+  in vec2 a_position;
+  
+  uniform vec2 u_resolution;
+  
+  // translation to add to position
+  uniform vec2 u_translation;
+  
+  uniform vec2 u_rotation;
+  
+  // all shaders have a main function
+  void main() {
+    // Rotate the position
+    vec2 rotatedPosition = vec2(
+       a_position.x * u_rotation.y + a_position.y * u_rotation.x,
+       a_position.y * u_rotation.y - a_position.x * u_rotation.x);
+  
+    // Add in the translation  
+    vec2 position = rotatedPosition + u_translation;
+  
+    // convert the position from pixels to 0.0 to 1.0
+    vec2 zeroToOne = position / u_resolution;
+ 
+    // convert from 0->1 to 0->2
+    vec2 zeroToTwo = zeroToOne * 2.0;
+ 
+    // convert from 0->2 to -1->+1 (clipspace)
+    vec2 clipSpace = zeroToTwo - 1.0;
+  
+    // gl_Position is a special variable a vertex shader
+    // is responsible for setting
+    gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
+  }")
+
+(def rotation-fragment-shader-source
+  "#version 300 es
+  
+  // fragment shaders don't have a default precision so we need
+  // to pick one. mediump is a good default. It means 'medium precision'
+  precision mediump float;
+  
+  uniform vec4 u_color;
+  
+  // we need to declare an output for the fragment shader
+  out vec4 outColor;
+  
+  void main() {
+    // Just set the output to a constant redish-purple
+    outColor = u_color;
+  }")
+
+(defn rotation-render [canvas {:keys [tx ty rx ry]}]
+  (let [gl (.getContext canvas "webgl2")
+        program (create-program gl
+                  rotation-vertex-shader-source
+                  rotation-fragment-shader-source)
+        vao (let [vao (.createVertexArray gl)]
+              (.bindVertexArray gl vao)
+              vao)
+        pos-buffer (let [pos-attrib-location (.getAttribLocation gl program "a_position")
+                         pos-buffer (.createBuffer gl)
+                         _ (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
+                         _ (.enableVertexAttribArray gl pos-attrib-location)
+                         size 2, type gl.FLOAT, normalize false, stride 0, offset 0
+                         _ (.vertexAttribPointer gl pos-attrib-location size type normalize stride offset)]
+                     pos-buffer)
+        resolution-location (.getUniformLocation gl program "u_resolution")
+        color-location (.getUniformLocation gl program "u_color")
+        translation-location (.getUniformLocation gl program "u_translation")
+        rotation-location (.getUniformLocation gl program "u_rotation")]
+    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
+    (.bufferData gl gl.ARRAY_BUFFER
+      (js/Float32Array. (array
+                          ;; left column
+                          0 0, 30 0, 0 150, 0 150, 30 0, 30 150
+                          ;; top rung
+                          30 0, 100 0, 30 30, 30 30, 100 0, 100 30
+                          ;; middle rung
+                          30 60, 67 60, 30 90, 30 90, 67 60, 67 90))
+      gl.STATIC_DRAW)
+    (resize-canvas canvas)
+    (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
+    (.clearColor gl 0 0 0 0)
+    (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
+    (.useProgram gl program)
+    (.bindVertexArray gl vao)
+    (.uniform2f gl resolution-location gl.canvas.width gl.canvas.height)
+    (.uniform4f gl color-location 1 0 0.5 1)
+    (.uniform2fv gl translation-location (array tx ty))
+    (.uniform2fv gl rotation-location (array rx ry))
+    (.drawArrays gl gl.TRIANGLES 0 18)))
+
+(defn rotation-init [canvas]
+  (let [tx 100
+        ty 100
+        *state (atom {:tx tx :ty ty :rx 0 :ry 0})]
+    (events/listen js/window "mousemove"
+      (fn [event]
+        (let [bounds (.getBoundingClientRect canvas)
+              rx (/ (- (.-clientX event) (.-left bounds) tx)
+                    (.-width bounds))
+              ry (/ (- (.-clientY event) (.-top bounds) ty)
+                    (.-height bounds))]
+          (rotation-render canvas (swap! *state assoc :rx rx :ry ry)))))
+    (rotation-render canvas @*state)))
+
+(defexample iglu.core/rotation
+  {:with-card card}
+  (defonce rotation-canvas (iglu.examples/create-canvas card))
+  (iglu.examples/rotation-init rotation-canvas))
+
 
