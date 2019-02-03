@@ -243,24 +243,51 @@
   (->> (iglu.examples/create-canvas card)
        (iglu.examples/image-init)))
 
-;; translation
+;; transformations
 
-(def translation-vertex-shader-source
+(defn translation-matrix [tx ty]
+  (array
+    1 0 0
+    0 1 0
+    tx ty 1))
+
+(defn rotation-matrix [angle-in-radians]
+  (let [c (js/Math.cos angle-in-radians)
+        s (js/Math.sin angle-in-radians)]
+    (array
+      c (- s) 0
+      s c 0
+      0 0 1)))
+
+(defn scaling-matrix [sx sy]
+  (array
+    sx 0 0
+    0 sy 0
+    0 0 1))
+
+(defn multiply-matrices [dim m1 m2]
+  (let [m1 (clj->js (partition dim m1))
+        m2 (clj->js (partition dim m2))
+        result (for [i (range dim)
+                     j (range dim)]
+                 (reduce
+                   (fn [sum k]
+                     (+ sum (* (aget m1 i k) (aget m2 k j))))
+                   0
+                   (range dim)))]
+    (clj->js result)))
+
+(def transformation-vertex-shader-source
   "#version 300 es
   
-  // an attribute is an input (in) to a vertex shader.
-  // It will receive data from a buffer
   in vec2 a_position;
   
   uniform vec2 u_resolution;
   
-  // translation to add to position
-  uniform vec2 u_translation;
+  uniform mat3 u_matrix;
   
-  // all shaders have a main function
   void main() {
-    // Add in the translation  
-    vec2 position = a_position + u_translation;
+    vec2 position = (u_matrix * vec3(a_position, 1)).xy;
   
     // convert the position from pixels to 0.0 to 1.0
     vec2 zeroToOne = position / u_resolution;
@@ -276,7 +303,7 @@
     gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
   }")
 
-(def translation-fragment-shader-source
+(def transformation-fragment-shader-source
   "#version 300 es
   
   // fragment shaders don't have a default precision so we need
@@ -293,11 +320,13 @@
     outColor = u_color;
   }")
 
+;; translation
+
 (defn translation-render [canvas {:keys [x y]}]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
-                  translation-vertex-shader-source
-                  translation-fragment-shader-source)
+                  transformation-vertex-shader-source
+                  transformation-fragment-shader-source)
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
@@ -310,7 +339,7 @@
                      pos-buffer)
         resolution-location (.getUniformLocation gl program "u_resolution")
         color-location (.getUniformLocation gl program "u_color")
-        translation-location (.getUniformLocation gl program "u_translation")]
+        matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
     (.bufferData gl gl.ARRAY_BUFFER
       (js/Float32Array. (array
@@ -329,7 +358,8 @@
     (.bindVertexArray gl vao)
     (.uniform2f gl resolution-location gl.canvas.width gl.canvas.height)
     (.uniform4f gl color-location 1 0 0.5 1)
-    (.uniform2fv gl translation-location (array x y))
+    (.uniformMatrix3fv gl matrix-location false
+      (translation-matrix x y))
     (.drawArrays gl gl.TRIANGLES 0 18)))
 
 (defn translation-init [canvas]
@@ -349,66 +379,11 @@
 
 ;; rotation
 
-(def rotation-vertex-shader-source
-  "#version 300 es
-  
-  // an attribute is an input (in) to a vertex shader.
-  // It will receive data from a buffer
-  in vec2 a_position;
-  
-  uniform vec2 u_resolution;
-  
-  // translation to add to position
-  uniform vec2 u_translation;
-  
-  uniform vec2 u_rotation;
-  
-  // all shaders have a main function
-  void main() {
-    // Rotate the position
-    vec2 rotatedPosition = vec2(
-       a_position.x * u_rotation.y + a_position.y * u_rotation.x,
-       a_position.y * u_rotation.y - a_position.x * u_rotation.x);
-  
-    // Add in the translation  
-    vec2 position = rotatedPosition + u_translation;
-  
-    // convert the position from pixels to 0.0 to 1.0
-    vec2 zeroToOne = position / u_resolution;
- 
-    // convert from 0->1 to 0->2
-    vec2 zeroToTwo = zeroToOne * 2.0;
- 
-    // convert from 0->2 to -1->+1 (clipspace)
-    vec2 clipSpace = zeroToTwo - 1.0;
-  
-    // gl_Position is a special variable a vertex shader
-    // is responsible for setting
-    gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
-  }")
-
-(def rotation-fragment-shader-source
-  "#version 300 es
-  
-  // fragment shaders don't have a default precision so we need
-  // to pick one. mediump is a good default. It means 'medium precision'
-  precision mediump float;
-  
-  uniform vec4 u_color;
-  
-  // we need to declare an output for the fragment shader
-  out vec4 outColor;
-  
-  void main() {
-    // Just set the output to a constant redish-purple
-    outColor = u_color;
-  }")
-
-(defn rotation-render [canvas {:keys [tx ty rx ry]}]
+(defn rotation-render [canvas {:keys [tx ty r]}]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
-                  rotation-vertex-shader-source
-                  rotation-fragment-shader-source)
+                  transformation-vertex-shader-source
+                  transformation-fragment-shader-source)
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
@@ -421,8 +396,7 @@
                      pos-buffer)
         resolution-location (.getUniformLocation gl program "u_resolution")
         color-location (.getUniformLocation gl program "u_color")
-        translation-location (.getUniformLocation gl program "u_translation")
-        rotation-location (.getUniformLocation gl program "u_rotation")]
+        matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
     (.bufferData gl gl.ARRAY_BUFFER
       (js/Float32Array. (array
@@ -441,14 +415,15 @@
     (.bindVertexArray gl vao)
     (.uniform2f gl resolution-location gl.canvas.width gl.canvas.height)
     (.uniform4f gl color-location 1 0 0.5 1)
-    (.uniform2fv gl translation-location (array tx ty))
-    (.uniform2fv gl rotation-location (array rx ry))
+    (.uniformMatrix3fv gl matrix-location false
+      (->> (translation-matrix tx ty)
+           (multiply-matrices 3 (rotation-matrix r))))
     (.drawArrays gl gl.TRIANGLES 0 18)))
 
 (defn rotation-init [canvas]
   (let [tx 100
         ty 100
-        *state (atom {:tx tx :ty ty :rx 0 :ry 0})]
+        *state (atom {:tx tx :ty ty :r 0})]
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -456,7 +431,7 @@
                     (.-width bounds))
               ry (/ (- (.-clientY event) (.-top bounds) ty)
                     (.-height bounds))]
-          (rotation-render canvas (swap! *state assoc :rx rx :ry ry)))))
+          (rotation-render canvas (swap! *state assoc :r (Math/atan2 rx ry))))))
     (rotation-render canvas @*state)))
 
 (defexample iglu.core/rotation
@@ -466,71 +441,11 @@
 
 ;; scale
 
-(def scale-vertex-shader-source
-  "#version 300 es
-  
-  // an attribute is an input (in) to a vertex shader.
-  // It will receive data from a buffer
-  in vec2 a_position;
-  
-  uniform vec2 u_resolution;
-  
-  // translation to add to position
-  uniform vec2 u_translation;
-  
-  uniform vec2 u_rotation;
-  
-  uniform vec2 u_scale;
-  
-  // all shaders have a main function
-  void main() {
-    // Scale the positon
-    vec2 scaledPosition = a_position * u_scale;
-  
-    // Rotate the position
-    vec2 rotatedPosition = vec2(
-       scaledPosition.x * u_rotation.y + scaledPosition.y * u_rotation.x,
-       scaledPosition.y * u_rotation.y - scaledPosition.x * u_rotation.x);
-  
-    // Add in the translation  
-    vec2 position = rotatedPosition + u_translation;
-  
-    // convert the position from pixels to 0.0 to 1.0
-    vec2 zeroToOne = position / u_resolution;
- 
-    // convert from 0->1 to 0->2
-    vec2 zeroToTwo = zeroToOne * 2.0;
- 
-    // convert from 0->2 to -1->+1 (clipspace)
-    vec2 clipSpace = zeroToTwo - 1.0;
-  
-    // gl_Position is a special variable a vertex shader
-    // is responsible for setting
-    gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
-  }")
-
-(def scale-fragment-shader-source
-  "#version 300 es
-  
-  // fragment shaders don't have a default precision so we need
-  // to pick one. mediump is a good default. It means 'medium precision'
-  precision mediump float;
-  
-  uniform vec4 u_color;
-  
-  // we need to declare an output for the fragment shader
-  out vec4 outColor;
-  
-  void main() {
-    // Just set the output to a constant redish-purple
-    outColor = u_color;
-  }")
-
 (defn scale-render [canvas {:keys [tx ty sx sy]}]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
-                  scale-vertex-shader-source
-                  scale-fragment-shader-source)
+                  transformation-vertex-shader-source
+                  transformation-fragment-shader-source)
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
@@ -543,9 +458,7 @@
                      pos-buffer)
         resolution-location (.getUniformLocation gl program "u_resolution")
         color-location (.getUniformLocation gl program "u_color")
-        translation-location (.getUniformLocation gl program "u_translation")
-        rotation-location (.getUniformLocation gl program "u_rotation")
-        scale-location (.getUniformLocation gl program "u_scale")]
+        matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
     (.bufferData gl gl.ARRAY_BUFFER
       (js/Float32Array. (array
@@ -564,9 +477,10 @@
     (.bindVertexArray gl vao)
     (.uniform2f gl resolution-location gl.canvas.width gl.canvas.height)
     (.uniform4f gl color-location 1 0 0.5 1)
-    (.uniform2fv gl translation-location (array tx ty))
-    (.uniform2fv gl rotation-location (array 0 1))
-    (.uniform2fv gl scale-location (array sx sy))
+    (.uniformMatrix3fv gl matrix-location false
+      (->> (translation-matrix tx ty)
+           (multiply-matrices 3 (rotation-matrix 0))
+           (multiply-matrices 3 (scaling-matrix sx sy))))
     (.drawArrays gl gl.TRIANGLES 0 18)))
 
 (defn scale-init [canvas]
