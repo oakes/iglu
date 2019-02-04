@@ -1,6 +1,6 @@
 (ns iglu.examples
   (:require [goog.events :as events]
-            [iglu.geoms :as geoms])
+            [iglu.data :as data])
   (:require-macros [dynadoc.example :refer [defexample]]))
 
 (defn create-canvas [card]
@@ -81,53 +81,11 @@
 
 ;; rand-rects
 
-(def rand-rects-vertex-shader-source
-  "#version 300 es
-  
-  // an attribute is an input (in) to a vertex shader.
-  // It will receive data from a buffer
-  in vec2 a_position;
-  
-  uniform vec2 u_resolution;
-  
-  // all shaders have a main function
-  void main() {
-    // convert the position from pixels to 0.0 to 1.0
-    vec2 zeroToOne = a_position / u_resolution;
- 
-    // convert from 0->1 to 0->2
-    vec2 zeroToTwo = zeroToOne * 2.0;
- 
-    // convert from 0->2 to -1->+1 (clipspace)
-    vec2 clipSpace = zeroToTwo - 1.0;
-  
-    // gl_Position is a special variable a vertex shader
-    // is responsible for setting
-    gl_Position = vec4(clipSpace, 0, 1);
-  }")
-
-(def rand-rects-fragment-shader-source
-  "#version 300 es
-  
-  // fragment shaders don't have a default precision so we need
-  // to pick one. mediump is a good default. It means 'medium precision'
-  precision mediump float;
-  
-  uniform vec4 u_color;
-  
-  // we need to declare an output for the fragment shader
-  out vec4 outColor;
-  
-  void main() {
-    // Just set the output to a constant redish-purple
-    outColor = u_color;
-  }")
-
 (defn rand-rects-init [canvas]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
-                  rand-rects-vertex-shader-source
-                  rand-rects-fragment-shader-source)
+                  data/rand-rects-vertex-shader-source
+                  data/rand-rects-fragment-shader-source)
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
@@ -154,63 +112,11 @@
 
 ;; image
 
-(def image-vertex-shader-source
-  "#version 300 es
-  
-  // an attribute is an input (in) to a vertex shader.
-  // It will receive data from a buffer
-  in vec2 a_position;
-  
-  in vec2 a_texCoord;
-  
-  uniform vec2 u_resolution;
-  
-  out vec2 v_texCoord;
-  
-  // all shaders have a main function
-  void main() {
-    // convert the position from pixels to 0.0 to 1.0
-    vec2 zeroToOne = a_position / u_resolution;
- 
-    // convert from 0->1 to 0->2
-    vec2 zeroToTwo = zeroToOne * 2.0;
- 
-    // convert from 0->2 to -1->+1 (clipspace)
-    vec2 clipSpace = zeroToTwo - 1.0;
-  
-    // gl_Position is a special variable a vertex shader
-    // is responsible for setting
-    gl_Position = vec4(clipSpace, 0, 1);
-  
-    // pass the texCoord to the fragment shader
-    // The GPU will interpolate this value between points
-    v_texCoord = a_texCoord;
-  }")
-
-(def image-fragment-shader-source
-  "#version 300 es
-  
-  precision mediump float;
-   
-  // our texture
-  uniform sampler2D u_image;
-   
-  // the texCoords passed in from the vertex shader.
-  in vec2 v_texCoord;
-   
-  // we need to declare an output for the fragment shader
-  out vec4 outColor;
-   
-  void main() {
-     // Look up a color from the texture.
-     outColor = texture(u_image, v_texCoord).bgra;
-  }")
-
 (defn image-render [canvas image]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
-                  image-vertex-shader-source
-                  image-fragment-shader-source)
+                  data/image-vertex-shader-source
+                  data/image-fragment-shader-source)
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
@@ -292,41 +198,13 @@
     0 (/ -2 height) 0
     -1 1 1))
 
-(def two-d-vertex-shader-source
-  "#version 300 es
-  
-  in vec2 a_position;
-  
-  uniform mat3 u_matrix;
-  
-  void main() {
-    gl_Position = vec4((u_matrix * vec3(a_position, 1)).xy, 0, 1);
-  }")
-
-(def two-d-fragment-shader-source
-  "#version 300 es
-  
-  // fragment shaders don't have a default precision so we need
-  // to pick one. mediump is a good default. It means 'medium precision'
-  precision mediump float;
-  
-  uniform vec4 u_color;
-  
-  // we need to declare an output for the fragment shader
-  out vec4 outColor;
-  
-  void main() {
-    // Just set the output to a constant redish-purple
-    outColor = u_color;
-  }")
-
 ;; translation
 
 (defn translation-render [canvas {:keys [x y]}]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
-                  two-d-vertex-shader-source
-                  two-d-fragment-shader-source)
+                  data/two-d-vertex-shader-source
+                  data/two-d-fragment-shader-source)
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
@@ -334,7 +212,7 @@
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. geoms/f-2d) gl.STATIC_DRAW)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-2d) gl.STATIC_DRAW)
     (resize-canvas canvas)
     (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
     (.clearColor gl 0 0 0 0)
@@ -367,8 +245,8 @@
 (defn rotation-render [canvas {:keys [tx ty r]}]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
-                  two-d-vertex-shader-source
-                  two-d-fragment-shader-source)
+                  data/two-d-vertex-shader-source
+                  data/two-d-fragment-shader-source)
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
@@ -376,7 +254,7 @@
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. geoms/f-2d) gl.STATIC_DRAW)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-2d) gl.STATIC_DRAW)
     (resize-canvas canvas)
     (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
     (.clearColor gl 0 0 0 0)
@@ -416,8 +294,8 @@
 (defn scale-render [canvas {:keys [tx ty sx sy]}]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
-                  two-d-vertex-shader-source
-                  two-d-fragment-shader-source)
+                  data/two-d-vertex-shader-source
+                  data/two-d-fragment-shader-source)
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
@@ -425,7 +303,7 @@
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. geoms/f-2d) gl.STATIC_DRAW)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-2d) gl.STATIC_DRAW)
     (resize-canvas canvas)
     (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
     (.clearColor gl 0 0 0 0)
@@ -464,8 +342,8 @@
 (defn rotation-multi-render [canvas {:keys [tx ty r]}]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
-                  two-d-vertex-shader-source
-                  two-d-fragment-shader-source)
+                  data/two-d-vertex-shader-source
+                  data/two-d-fragment-shader-source)
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
@@ -473,7 +351,7 @@
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. geoms/f-2d) gl.STATIC_DRAW)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-2d) gl.STATIC_DRAW)
     (resize-canvas canvas)
     (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
     (.clearColor gl 0 0 0 0)
@@ -570,43 +448,13 @@
          (- near far))
       1)))
 
-(def three-d-vertex-shader-source
-  "#version 300 es
-  
-  in vec4 a_position;
-  in vec4 a_color;
-  uniform mat4 u_matrix;
-  out vec4 v_color;
-  
-  void main() {
-    gl_Position = u_matrix * a_position;
-    v_color = a_color;
-  }")
-
-(def three-d-fragment-shader-source
-  "#version 300 es
-  
-  // fragment shaders don't have a default precision so we need
-  // to pick one. mediump is a good default. It means 'medium precision'
-  precision mediump float;
-  
-  in vec4 v_color;
-  
-  // we need to declare an output for the fragment shader
-  out vec4 outColor;
-  
-  void main() {
-    // Just set the output to a constant redish-purple
-    outColor = v_color;
-  }")
-
 ;; translation-3d
 
 (defn translation-3d-render [canvas {:keys [x y]}]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
-                  three-d-vertex-shader-source
-                  three-d-fragment-shader-source)
+                  data/three-d-vertex-shader-source
+                  data/three-d-fragment-shader-source)
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
@@ -616,9 +464,9 @@
                                                           :normalize true})
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. geoms/f-3d) gl.STATIC_DRAW)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-3d) gl.STATIC_DRAW)
     (.bindBuffer gl gl.ARRAY_BUFFER color-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. geoms/f-3d-colors) gl.STATIC_DRAW)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. data/f-3d-colors) gl.STATIC_DRAW)
     (resize-canvas canvas)
     (.enable gl gl.CULL_FACE)
     (.enable gl gl.DEPTH_TEST)
@@ -660,8 +508,8 @@
 (defn rotation-3d-render [canvas {:keys [tx ty r]}]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
-                  three-d-vertex-shader-source
-                  three-d-fragment-shader-source)
+                  data/three-d-vertex-shader-source
+                  data/three-d-fragment-shader-source)
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
@@ -671,9 +519,9 @@
                                                           :normalize true})
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. geoms/f-3d) gl.STATIC_DRAW)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-3d) gl.STATIC_DRAW)
     (.bindBuffer gl gl.ARRAY_BUFFER color-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. geoms/f-3d-colors) gl.STATIC_DRAW)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. data/f-3d-colors) gl.STATIC_DRAW)
     (resize-canvas canvas)
     (.enable gl gl.CULL_FACE)
     (.enable gl gl.DEPTH_TEST)
@@ -721,8 +569,8 @@
 (defn scale-3d-render [canvas {:keys [tx ty sx sy]}]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
-                  three-d-vertex-shader-source
-                  three-d-fragment-shader-source)
+                  data/three-d-vertex-shader-source
+                  data/three-d-fragment-shader-source)
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
@@ -732,9 +580,9 @@
                                                           :normalize true})
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. geoms/f-3d) gl.STATIC_DRAW)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-3d) gl.STATIC_DRAW)
     (.bindBuffer gl gl.ARRAY_BUFFER color-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. geoms/f-3d-colors) gl.STATIC_DRAW)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. data/f-3d-colors) gl.STATIC_DRAW)
     (resize-canvas canvas)
     (.enable gl gl.CULL_FACE)
     (.enable gl gl.DEPTH_TEST)

@@ -1,4 +1,156 @@
-(ns iglu.geoms)
+(ns iglu.data)
+
+(def rand-rects-vertex-shader-source
+  "#version 300 es
+  
+  // an attribute is an input (in) to a vertex shader.
+  // It will receive data from a buffer
+  in vec2 a_position;
+  
+  uniform vec2 u_resolution;
+  
+  // all shaders have a main function
+  void main() {
+    // convert the position from pixels to 0.0 to 1.0
+    vec2 zeroToOne = a_position / u_resolution;
+ 
+    // convert from 0->1 to 0->2
+    vec2 zeroToTwo = zeroToOne * 2.0;
+ 
+    // convert from 0->2 to -1->+1 (clipspace)
+    vec2 clipSpace = zeroToTwo - 1.0;
+  
+    // gl_Position is a special variable a vertex shader
+    // is responsible for setting
+    gl_Position = vec4(clipSpace, 0, 1);
+  }")
+
+(def rand-rects-fragment-shader-source
+  "#version 300 es
+  
+  // fragment shaders don't have a default precision so we need
+  // to pick one. mediump is a good default. It means 'medium precision'
+  precision mediump float;
+  
+  uniform vec4 u_color;
+  
+  // we need to declare an output for the fragment shader
+  out vec4 outColor;
+  
+  void main() {
+    // Just set the output to a constant redish-purple
+    outColor = u_color;
+  }")
+
+(def image-vertex-shader-source
+  "#version 300 es
+  
+  // an attribute is an input (in) to a vertex shader.
+  // It will receive data from a buffer
+  in vec2 a_position;
+  
+  in vec2 a_texCoord;
+  
+  uniform vec2 u_resolution;
+  
+  out vec2 v_texCoord;
+  
+  // all shaders have a main function
+  void main() {
+    // convert the position from pixels to 0.0 to 1.0
+    vec2 zeroToOne = a_position / u_resolution;
+ 
+    // convert from 0->1 to 0->2
+    vec2 zeroToTwo = zeroToOne * 2.0;
+ 
+    // convert from 0->2 to -1->+1 (clipspace)
+    vec2 clipSpace = zeroToTwo - 1.0;
+  
+    // gl_Position is a special variable a vertex shader
+    // is responsible for setting
+    gl_Position = vec4(clipSpace, 0, 1);
+  
+    // pass the texCoord to the fragment shader
+    // The GPU will interpolate this value between points
+    v_texCoord = a_texCoord;
+  }")
+
+(def image-fragment-shader-source
+  "#version 300 es
+  
+  precision mediump float;
+   
+  // our texture
+  uniform sampler2D u_image;
+   
+  // the texCoords passed in from the vertex shader.
+  in vec2 v_texCoord;
+   
+  // we need to declare an output for the fragment shader
+  out vec4 outColor;
+   
+  void main() {
+     // Look up a color from the texture.
+     outColor = texture(u_image, v_texCoord).bgra;
+  }")
+
+(def two-d-vertex-shader-source
+  "#version 300 es
+  
+  in vec2 a_position;
+  
+  uniform mat3 u_matrix;
+  
+  void main() {
+    gl_Position = vec4((u_matrix * vec3(a_position, 1)).xy, 0, 1);
+  }")
+
+(def two-d-fragment-shader-source
+  "#version 300 es
+  
+  // fragment shaders don't have a default precision so we need
+  // to pick one. mediump is a good default. It means 'medium precision'
+  precision mediump float;
+  
+  uniform vec4 u_color;
+  
+  // we need to declare an output for the fragment shader
+  out vec4 outColor;
+  
+  void main() {
+    // Just set the output to a constant redish-purple
+    outColor = u_color;
+  }")
+
+(def three-d-vertex-shader-source
+  "#version 300 es
+  
+  in vec4 a_position;
+  in vec4 a_color;
+  uniform mat4 u_matrix;
+  out vec4 v_color;
+  
+  void main() {
+    gl_Position = u_matrix * a_position;
+    v_color = a_color;
+  }")
+
+(def three-d-fragment-shader-source
+  "#version 300 es
+  
+  // fragment shaders don't have a default precision so we need
+  // to pick one. mediump is a good default. It means 'medium precision'
+  precision mediump float;
+  
+  in vec4 v_color;
+  
+  // we need to declare an output for the fragment shader
+  out vec4 outColor;
+  
+  void main() {
+    // Just set the output to a constant redish-purple
+    outColor = v_color;
+  }")
 
 (def f-2d
   (array
