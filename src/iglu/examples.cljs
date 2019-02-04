@@ -1,5 +1,6 @@
 (ns iglu.examples
-  (:require [goog.events :as events])
+  (:require [goog.events :as events]
+            [iglu.geoms :as geoms])
   (:require-macros [dynadoc.example :refer [defexample]]))
 
 (defn create-canvas [card]
@@ -58,14 +59,22 @@
                    (range size)))]
     (clj->js result)))
 
-(defn create-pos-buffer [gl program size]
-  (let [pos-attrib-location (.getAttribLocation gl program "a_position")
-        pos-buffer (.createBuffer gl)
-        _ (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-        _ (.enableVertexAttribArray gl pos-attrib-location)
-        type gl.FLOAT, normalize false, stride 0, offset 0
-        _ (.vertexAttribPointer gl pos-attrib-location size type normalize stride offset)]
-    pos-buffer))
+(defn create-buffer
+  ([gl program attrib-name]
+   (create-buffer gl program attrib-name {}))
+  ([gl program attrib-name
+    {:keys [size type normalize stride offset]
+     :or {size 2
+          type gl.FLOAT
+          normalize false
+          stride 0
+          offset 0}}]
+   (let [attrib-location (.getAttribLocation gl program attrib-name)
+         buffer (.createBuffer gl)
+         _ (.bindBuffer gl gl.ARRAY_BUFFER buffer)
+         _ (.enableVertexAttribArray gl attrib-location)
+         _ (.vertexAttribPointer gl attrib-location size type normalize stride offset)]
+     buffer)))
 
 (defn deg->rad [d]
   (-> d (* js/Math.PI) (/ 180)))
@@ -122,7 +131,7 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (create-pos-buffer gl program 2)
+        pos-buffer (create-buffer gl program "a_position")
         resolution-location (.getUniformLocation gl program "u_resolution")
         color-location (.getUniformLocation gl program "u_color")]
     (resize-canvas canvas)
@@ -205,7 +214,7 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (create-pos-buffer gl program 2)
+        pos-buffer (create-buffer gl program "a_position")
         tex-coord-buffer (let [tex-coord-attrib-location (.getAttribLocation gl program "a_texCoord")
                                tex-coord-buffer (.createBuffer gl)
                                _ (.bindBuffer gl gl.ARRAY_BUFFER tex-coord-buffer)
@@ -311,15 +320,6 @@
     outColor = u_color;
   }")
 
-(def two-d-geom
-  (array
-    ;; left column
-    0 0, 30 0, 0 150, 0 150, 30 0, 30 150
-    ;; top rung
-    30 0, 100 0, 30 30, 30 30, 100 0, 100 30
-    ;; middle rung
-    30 60, 67 60, 30 90, 30 90, 67 60, 67 90))
-
 ;; translation
 
 (defn translation-render [canvas {:keys [x y]}]
@@ -330,11 +330,11 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (create-pos-buffer gl program 2)
+        pos-buffer (create-buffer gl program "a_position")
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. two-d-geom) gl.STATIC_DRAW)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. geoms/f-2d) gl.STATIC_DRAW)
     (resize-canvas canvas)
     (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
     (.clearColor gl 0 0 0 0)
@@ -372,11 +372,11 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (create-pos-buffer gl program 2)
+        pos-buffer (create-buffer gl program "a_position")
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. two-d-geom) gl.STATIC_DRAW)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. geoms/f-2d) gl.STATIC_DRAW)
     (resize-canvas canvas)
     (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
     (.clearColor gl 0 0 0 0)
@@ -421,11 +421,11 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (create-pos-buffer gl program 2)
+        pos-buffer (create-buffer gl program "a_position")
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. two-d-geom) gl.STATIC_DRAW)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. geoms/f-2d) gl.STATIC_DRAW)
     (resize-canvas canvas)
     (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
     (.clearColor gl 0 0 0 0)
@@ -469,11 +469,11 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (create-pos-buffer gl program 2)
+        pos-buffer (create-buffer gl program "a_position")
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. two-d-geom) gl.STATIC_DRAW)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. geoms/f-2d) gl.STATIC_DRAW)
     (resize-canvas canvas)
     (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
     (.clearColor gl 0 0 0 0)
@@ -564,11 +564,13 @@
   "#version 300 es
   
   in vec4 a_position;
-  
+  in vec4 a_color;
   uniform mat4 u_matrix;
+  out vec4 v_color;
   
   void main() {
     gl_Position = u_matrix * a_position;
+    v_color = a_color;
   }")
 
 (def three-d-fragment-shader-source
@@ -578,171 +580,17 @@
   // to pick one. mediump is a good default. It means 'medium precision'
   precision mediump float;
   
-  uniform vec4 u_color;
+  in vec4 v_color;
   
   // we need to declare an output for the fragment shader
   out vec4 outColor;
   
   void main() {
     // Just set the output to a constant redish-purple
-    outColor = u_color;
+    outColor = v_color;
   }")
 
-(def three-d-geom
-  (array
-      ;; left column
-      0,   0,  0,
-     30,   0,  0,
-      0, 150,  0,
-      0, 150,  0,
-     30,   0,  0,
-     30, 150,  0,
-  
-    ;; top rung
-     30,   0,  0,
-    100,   0,  0,
-     30,  30,  0,
-     30,  30,  0,
-    100,   0,  0,
-    100,  30,  0,
-  
-    ;; middle rung
-     30,  60,  0,
-     67,  60,  0,
-     30,  90,  0,
-     30,  90,  0,
-     67,  60,  0,
-     67,  90,  0))
 
-(def three-d-geom-2
-  (array
-      ;; left column front
-      0,   0,  0,
-     30,   0,  0,
-      0, 150,  0,
-      0, 150,  0,
-     30,   0,  0,
-     30, 150,  0,
-  
-    ;; top rung front
-     30,   0,  0,
-    100,   0,  0,
-     30,  30,  0,
-     30,  30,  0,
-    100,   0,  0,
-    100,  30,  0,
-  
-    ;; middle rung front
-     30,  60,  0,
-     67,  60,  0,
-     30,  90,  0,
-     30,  90,  0,
-     67,  60,  0,
-     67,  90,  0,
-  
-    ;; left column back
-      0,   0,  30,
-     30,   0,  30,
-      0, 150,  30,
-      0, 150,  30,
-     30,   0,  30,
-     30, 150,  30,
-  
-    ;; top rung back
-     30,   0,  30,
-    100,   0,  30,
-     30,  30,  30,
-     30,  30,  30,
-    100,   0,  30,
-    100,  30,  30,
-  
-    ;; middle rung back
-     30,  60,  30,
-     67,  60,  30,
-     30,  90,  30,
-     30,  90,  30,
-     67,  60,  30,
-     67,  90,  30,
-  
-    ;; top
-      0,   0,   0,
-    100,   0,   0,
-    100,   0,  30,
-      0,   0,   0,
-    100,   0,  30,
-      0,   0,  30,
-  
-    ;; top rung right
-    100,   0,   0,
-    100,  30,   0,
-    100,  30,  30,
-    100,   0,   0,
-    100,  30,  30,
-    100,   0,  30,
-  
-    ;; under top rung
-    30,   30,   0,
-    30,   30,  30,
-    100,  30,  30,
-    30,   30,   0,
-    100,  30,  30,
-    100,  30,   0,
-  
-    ;; between top rung and middle
-    30,   30,   0,
-    30,   30,  30,
-    30,   60,  30,
-    30,   30,   0,
-    30,   60,  30,
-    30,   60,   0,
-  
-    ;; top of middle rung
-    30,   60,   0,
-    30,   60,  30,
-    67,   60,  30,
-    30,   60,   0,
-    67,   60,  30,
-    67,   60,   0,
-  
-    ;; right of middle rung
-    67,   60,   0,
-    67,   60,  30,
-    67,   90,  30,
-    67,   60,   0,
-    67,   90,  30,
-    67,   90,   0,
-  
-    ;; bottom of middle rung.
-    30,   90,   0,
-    30,   90,  30,
-    67,   90,  30,
-    30,   90,   0,
-    67,   90,  30,
-    67,   90,   0,
-  
-    ;; right of bottom
-    30,   90,   0,
-    30,   90,  30,
-    30,  150,  30,
-    30,   90,   0,
-    30,  150,  30,
-    30,  150,   0,
-  
-    ;; bottom
-    0,   150,   0,
-    0,   150,  30,
-    30,  150,  30,
-    0,   150,   0,
-    30,  150,  30,
-    30,  150,   0,
-  
-    ;; left side
-    0,   0,   0,
-    0,   0,  30,
-    0, 150,  30,
-    0,   0,   0,
-    0, 150,  30,
-    0, 150,   0,))
 
 ;; translation-3d
 
@@ -754,18 +602,21 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (create-pos-buffer gl program 3)
-        color-location (.getUniformLocation gl program "u_color")
+        pos-buffer (create-buffer gl program "a_position" {:size 3})
+        color-buffer (create-buffer gl program "a_color" {:size 3
+                                                          :type gl.UNSIGNED_BYTE
+                                                          :normalize true})
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. three-d-geom-2) gl.STATIC_DRAW)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. geoms/f-3d) gl.STATIC_DRAW)
+    (.bindBuffer gl gl.ARRAY_BUFFER color-buffer)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. geoms/f-3d-colors) gl.STATIC_DRAW)
     (resize-canvas canvas)
     (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
     (.clearColor gl 0 0 0 0)
     (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
     (.useProgram gl program)
     (.bindVertexArray gl vao)
-    (.uniform4f gl color-location 1 0 0.5 1)
     (.uniformMatrix4fv gl matrix-location false
       (->> (projection-matrix-3d gl.canvas.clientWidth gl.canvas.clientHeight 400)
            (multiply-matrices 4 (translation-matrix-3d x y 0))
@@ -799,18 +650,21 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (create-pos-buffer gl program 3)
-        color-location (.getUniformLocation gl program "u_color")
+        pos-buffer (create-buffer gl program "a_position" {:size 3})
+        color-buffer (create-buffer gl program "a_color" {:size 3
+                                                          :type gl.UNSIGNED_BYTE
+                                                          :normalize true})
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. three-d-geom-2) gl.STATIC_DRAW)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. geoms/f-3d) gl.STATIC_DRAW)
+    (.bindBuffer gl gl.ARRAY_BUFFER color-buffer)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. geoms/f-3d-colors) gl.STATIC_DRAW)
     (resize-canvas canvas)
     (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
     (.clearColor gl 0 0 0 0)
     (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
     (.useProgram gl program)
     (.bindVertexArray gl vao)
-    (.uniform4f gl color-location 1 0 0.5 1)
     (.uniformMatrix4fv gl matrix-location false
       (->> (projection-matrix-3d gl.canvas.clientWidth gl.canvas.clientHeight 400)
            (multiply-matrices 4 (translation-matrix-3d tx ty 0))
@@ -850,18 +704,21 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (create-pos-buffer gl program 3)
-        color-location (.getUniformLocation gl program "u_color")
+        pos-buffer (create-buffer gl program "a_position" {:size 3})
+        color-buffer (create-buffer gl program "a_color" {:size 3
+                                                          :type gl.UNSIGNED_BYTE
+                                                          :normalize true})
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. three-d-geom-2) gl.STATIC_DRAW)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. geoms/f-3d) gl.STATIC_DRAW)
+    (.bindBuffer gl gl.ARRAY_BUFFER color-buffer)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. geoms/f-3d-colors) gl.STATIC_DRAW)
     (resize-canvas canvas)
     (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
     (.clearColor gl 0 0 0 0)
     (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
     (.useProgram gl program)
     (.bindVertexArray gl vao)
-    (.uniform4f gl color-location 1 0 0.5 1)
     (.uniformMatrix4fv gl matrix-location false
       (->> (projection-matrix-3d gl.canvas.clientWidth gl.canvas.clientHeight 400)
            (multiply-matrices 4 (translation-matrix-3d tx ty 0))
