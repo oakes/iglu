@@ -46,6 +46,30 @@
       (js/Float32Array. (array x1 y1, x2 y1, x1 y2, x1 y2, x2 y1, x2 y2))
       gl.STATIC_DRAW)))
 
+(defn multiply-matrices [size m1 m2]
+  (let [m1 (clj->js (partition size m1))
+        m2 (clj->js (partition size m2))
+        result (for [i (range size)
+                     j (range size)]
+                 (reduce
+                   (fn [sum k]
+                     (+ sum (* (aget m1 i k) (aget m2 k j))))
+                   0
+                   (range size)))]
+    (clj->js result)))
+
+(defn create-pos-buffer [gl program size]
+  (let [pos-attrib-location (.getAttribLocation gl program "a_position")
+        pos-buffer (.createBuffer gl)
+        _ (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
+        _ (.enableVertexAttribArray gl pos-attrib-location)
+        type gl.FLOAT, normalize false, stride 0, offset 0
+        _ (.vertexAttribPointer gl pos-attrib-location size type normalize stride offset)]
+    pos-buffer))
+
+(defn deg->rad [d]
+  (-> d (* js/Math.PI) (/ 180)))
+
 ;; rand-rects
 
 (def rand-rects-vertex-shader-source
@@ -98,13 +122,7 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (let [pos-attrib-location (.getAttribLocation gl program "a_position")
-                         pos-buffer (.createBuffer gl)
-                         _ (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-                         _ (.enableVertexAttribArray gl pos-attrib-location)
-                         size 2, type gl.FLOAT, normalize false, stride 0, offset 0
-                         _ (.vertexAttribPointer gl pos-attrib-location size type normalize stride offset)]
-                     pos-buffer)
+        pos-buffer (create-pos-buffer gl program 2)
         resolution-location (.getUniformLocation gl program "u_resolution")
         color-location (.getUniformLocation gl program "u_color")]
     (resize-canvas canvas)
@@ -187,13 +205,7 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (let [pos-attrib-location (.getAttribLocation gl program "a_position")
-                         pos-buffer (.createBuffer gl)
-                         _ (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-                         _ (.enableVertexAttribArray gl pos-attrib-location)
-                         size 2, type gl.FLOAT, normalize false, stride 0, offset 0
-                         _ (.vertexAttribPointer gl pos-attrib-location size type normalize stride offset)]
-                     pos-buffer)
+        pos-buffer (create-pos-buffer gl program 2)
         tex-coord-buffer (let [tex-coord-attrib-location (.getAttribLocation gl program "a_texCoord")
                                tex-coord-buffer (.createBuffer gl)
                                _ (.bindBuffer gl gl.ARRAY_BUFFER tex-coord-buffer)
@@ -243,7 +255,7 @@
   (->> (iglu.examples/create-canvas card)
        (iglu.examples/image-init)))
 
-;; transformations
+;; two-d
 
 (defn translation-matrix [tx ty]
   (array
@@ -271,19 +283,7 @@
     0 (/ -2 height) 0
     -1 1 1))
 
-(defn multiply-matrices [dim m1 m2]
-  (let [m1 (clj->js (partition dim m1))
-        m2 (clj->js (partition dim m2))
-        result (for [i (range dim)
-                     j (range dim)]
-                 (reduce
-                   (fn [sum k]
-                     (+ sum (* (aget m1 i k) (aget m2 k j))))
-                   0
-                   (range dim)))]
-    (clj->js result)))
-
-(def transformation-vertex-shader-source
+(def two-d-vertex-shader-source
   "#version 300 es
   
   in vec2 a_position;
@@ -294,7 +294,7 @@
     gl_Position = vec4((u_matrix * vec3(a_position, 1)).xy, 0, 1);
   }")
 
-(def transformation-fragment-shader-source
+(def two-d-fragment-shader-source
   "#version 300 es
   
   // fragment shaders don't have a default precision so we need
@@ -311,35 +311,30 @@
     outColor = u_color;
   }")
 
+(def two-d-geom
+  (array
+    ;; left column
+    0 0, 30 0, 0 150, 0 150, 30 0, 30 150
+    ;; top rung
+    30 0, 100 0, 30 30, 30 30, 100 0, 100 30
+    ;; middle rung
+    30 60, 67 60, 30 90, 30 90, 67 60, 67 90))
+
 ;; translation
 
 (defn translation-render [canvas {:keys [x y]}]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
-                  transformation-vertex-shader-source
-                  transformation-fragment-shader-source)
+                  two-d-vertex-shader-source
+                  two-d-fragment-shader-source)
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (let [pos-attrib-location (.getAttribLocation gl program "a_position")
-                         pos-buffer (.createBuffer gl)
-                         _ (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-                         _ (.enableVertexAttribArray gl pos-attrib-location)
-                         size 2, type gl.FLOAT, normalize false, stride 0, offset 0
-                         _ (.vertexAttribPointer gl pos-attrib-location size type normalize stride offset)]
-                     pos-buffer)
+        pos-buffer (create-pos-buffer gl program 2)
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER
-      (js/Float32Array. (array
-                          ;; left column
-                          0 0, 30 0, 0 150, 0 150, 30 0, 30 150
-                          ;; top rung
-                          30 0, 100 0, 30 30, 30 30, 100 0, 100 30
-                          ;; middle rung
-                          30 60, 67 60, 30 90, 30 90, 67 60, 67 90))
-      gl.STATIC_DRAW)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. two-d-geom) gl.STATIC_DRAW)
     (resize-canvas canvas)
     (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
     (.clearColor gl 0 0 0 0)
@@ -372,30 +367,16 @@
 (defn rotation-render [canvas {:keys [tx ty r]}]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
-                  transformation-vertex-shader-source
-                  transformation-fragment-shader-source)
+                  two-d-vertex-shader-source
+                  two-d-fragment-shader-source)
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (let [pos-attrib-location (.getAttribLocation gl program "a_position")
-                         pos-buffer (.createBuffer gl)
-                         _ (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-                         _ (.enableVertexAttribArray gl pos-attrib-location)
-                         size 2, type gl.FLOAT, normalize false, stride 0, offset 0
-                         _ (.vertexAttribPointer gl pos-attrib-location size type normalize stride offset)]
-                     pos-buffer)
+        pos-buffer (create-pos-buffer gl program 2)
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER
-      (js/Float32Array. (array
-                          ;; left column
-                          0 0, 30 0, 0 150, 0 150, 30 0, 30 150
-                          ;; top rung
-                          30 0, 100 0, 30 30, 30 30, 100 0, 100 30
-                          ;; middle rung
-                          30 60, 67 60, 30 90, 30 90, 67 60, 67 90))
-      gl.STATIC_DRAW)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. two-d-geom) gl.STATIC_DRAW)
     (resize-canvas canvas)
     (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
     (.clearColor gl 0 0 0 0)
@@ -435,30 +416,16 @@
 (defn scale-render [canvas {:keys [tx ty sx sy]}]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
-                  transformation-vertex-shader-source
-                  transformation-fragment-shader-source)
+                  two-d-vertex-shader-source
+                  two-d-fragment-shader-source)
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (let [pos-attrib-location (.getAttribLocation gl program "a_position")
-                         pos-buffer (.createBuffer gl)
-                         _ (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-                         _ (.enableVertexAttribArray gl pos-attrib-location)
-                         size 2, type gl.FLOAT, normalize false, stride 0, offset 0
-                         _ (.vertexAttribPointer gl pos-attrib-location size type normalize stride offset)]
-                     pos-buffer)
+        pos-buffer (create-pos-buffer gl program 2)
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER
-      (js/Float32Array. (array
-                          ;; left column
-                          0 0, 30 0, 0 150, 0 150, 30 0, 30 150
-                          ;; top rung
-                          30 0, 100 0, 30 30, 30 30, 100 0, 100 30
-                          ;; middle rung
-                          30 60, 67 60, 30 90, 30 90, 67 60, 67 90))
-      gl.STATIC_DRAW)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. two-d-geom) gl.STATIC_DRAW)
     (resize-canvas canvas)
     (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
     (.clearColor gl 0 0 0 0)
@@ -497,30 +464,16 @@
 (defn rotation-multi-render [canvas {:keys [tx ty r]}]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
-                  transformation-vertex-shader-source
-                  transformation-fragment-shader-source)
+                  two-d-vertex-shader-source
+                  two-d-fragment-shader-source)
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (let [pos-attrib-location (.getAttribLocation gl program "a_position")
-                         pos-buffer (.createBuffer gl)
-                         _ (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-                         _ (.enableVertexAttribArray gl pos-attrib-location)
-                         size 2, type gl.FLOAT, normalize false, stride 0, offset 0
-                         _ (.vertexAttribPointer gl pos-attrib-location size type normalize stride offset)]
-                     pos-buffer)
+        pos-buffer (create-pos-buffer gl program 2)
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER
-      (js/Float32Array. (array
-                          ;; left column
-                          0 0, 30 0, 0 150, 0 150, 30 0, 30 150
-                          ;; top rung
-                          30 0, 100 0, 30 30, 30 30, 100 0, 100 30
-                          ;; middle rung
-                          30 60, 67 60, 30 90, 30 90, 67 60, 67 90))
-      gl.STATIC_DRAW)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. two-d-geom) gl.STATIC_DRAW)
     (resize-canvas canvas)
     (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
     (.clearColor gl 0 0 0 0)
@@ -557,4 +510,383 @@
   (->> (iglu.examples/create-canvas card)
        (iglu.examples/rotation-multi-init)))
 
+;; three-d
+
+(defn translation-matrix-3d [tx ty tz]
+  (array
+    1,  0,  0,  0,
+    0,  1,  0,  0,
+    0,  0,  1,  0,
+    tx, ty, tz, 1,))
+
+(defn x-rotation-matrix-3d [angle-in-radians]
+  (let [c (js/Math.cos angle-in-radians)
+        s (js/Math.sin angle-in-radians)]
+    (array
+      1, 0, 0, 0,
+      0, c, s, 0,
+      0, (- s), c, 0,
+      0, 0, 0, 1)))
+
+(defn y-rotation-matrix-3d [angle-in-radians]
+  (let [c (js/Math.cos angle-in-radians)
+        s (js/Math.sin angle-in-radians)]
+    (array
+      c, 0, (- s), 0,
+      0, 1, 0, 0,
+      s, 0, c, 0,
+      0, 0, 0, 1,)))
+
+(defn z-rotation-matrix-3d [angle-in-radians]
+  (let [c (js/Math.cos angle-in-radians)
+        s (js/Math.sin angle-in-radians)]
+    (array
+      c, s, 0, 0,
+      (- s), c, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, 1,)))
+
+(defn scaling-matrix-3d [sx sy sz]
+  (array
+    sx, 0,  0,  0,
+    0, sy,  0,  0,
+    0,  0, sz,  0,
+    0,  0,  0,  1,))
+
+(defn projection-matrix-3d [width height depth]
+  (array
+    (/ 2 width) 0 0 0
+    0 (/ -2 height) 0 0
+    0 0 (/ 2 depth) 0
+    -1 1 0 1))
+
+(def three-d-vertex-shader-source
+  "#version 300 es
+  
+  in vec4 a_position;
+  
+  uniform mat4 u_matrix;
+  
+  void main() {
+    gl_Position = u_matrix * a_position;
+  }")
+
+(def three-d-fragment-shader-source
+  "#version 300 es
+  
+  // fragment shaders don't have a default precision so we need
+  // to pick one. mediump is a good default. It means 'medium precision'
+  precision mediump float;
+  
+  uniform vec4 u_color;
+  
+  // we need to declare an output for the fragment shader
+  out vec4 outColor;
+  
+  void main() {
+    // Just set the output to a constant redish-purple
+    outColor = u_color;
+  }")
+
+(def three-d-geom
+  (array
+      ;; left column
+      0,   0,  0,
+     30,   0,  0,
+      0, 150,  0,
+      0, 150,  0,
+     30,   0,  0,
+     30, 150,  0,
+  
+    ;; top rung
+     30,   0,  0,
+    100,   0,  0,
+     30,  30,  0,
+     30,  30,  0,
+    100,   0,  0,
+    100,  30,  0,
+  
+    ;; middle rung
+     30,  60,  0,
+     67,  60,  0,
+     30,  90,  0,
+     30,  90,  0,
+     67,  60,  0,
+     67,  90,  0))
+
+(def three-d-geom-2
+  (array
+      ;; left column front
+      0,   0,  0,
+     30,   0,  0,
+      0, 150,  0,
+      0, 150,  0,
+     30,   0,  0,
+     30, 150,  0,
+  
+    ;; top rung front
+     30,   0,  0,
+    100,   0,  0,
+     30,  30,  0,
+     30,  30,  0,
+    100,   0,  0,
+    100,  30,  0,
+  
+    ;; middle rung front
+     30,  60,  0,
+     67,  60,  0,
+     30,  90,  0,
+     30,  90,  0,
+     67,  60,  0,
+     67,  90,  0,
+  
+    ;; left column back
+      0,   0,  30,
+     30,   0,  30,
+      0, 150,  30,
+      0, 150,  30,
+     30,   0,  30,
+     30, 150,  30,
+  
+    ;; top rung back
+     30,   0,  30,
+    100,   0,  30,
+     30,  30,  30,
+     30,  30,  30,
+    100,   0,  30,
+    100,  30,  30,
+  
+    ;; middle rung back
+     30,  60,  30,
+     67,  60,  30,
+     30,  90,  30,
+     30,  90,  30,
+     67,  60,  30,
+     67,  90,  30,
+  
+    ;; top
+      0,   0,   0,
+    100,   0,   0,
+    100,   0,  30,
+      0,   0,   0,
+    100,   0,  30,
+      0,   0,  30,
+  
+    ;; top rung right
+    100,   0,   0,
+    100,  30,   0,
+    100,  30,  30,
+    100,   0,   0,
+    100,  30,  30,
+    100,   0,  30,
+  
+    ;; under top rung
+    30,   30,   0,
+    30,   30,  30,
+    100,  30,  30,
+    30,   30,   0,
+    100,  30,  30,
+    100,  30,   0,
+  
+    ;; between top rung and middle
+    30,   30,   0,
+    30,   30,  30,
+    30,   60,  30,
+    30,   30,   0,
+    30,   60,  30,
+    30,   60,   0,
+  
+    ;; top of middle rung
+    30,   60,   0,
+    30,   60,  30,
+    67,   60,  30,
+    30,   60,   0,
+    67,   60,  30,
+    67,   60,   0,
+  
+    ;; right of middle rung
+    67,   60,   0,
+    67,   60,  30,
+    67,   90,  30,
+    67,   60,   0,
+    67,   90,  30,
+    67,   90,   0,
+  
+    ;; bottom of middle rung.
+    30,   90,   0,
+    30,   90,  30,
+    67,   90,  30,
+    30,   90,   0,
+    67,   90,  30,
+    67,   90,   0,
+  
+    ;; right of bottom
+    30,   90,   0,
+    30,   90,  30,
+    30,  150,  30,
+    30,   90,   0,
+    30,  150,  30,
+    30,  150,   0,
+  
+    ;; bottom
+    0,   150,   0,
+    0,   150,  30,
+    30,  150,  30,
+    0,   150,   0,
+    30,  150,  30,
+    30,  150,   0,
+  
+    ;; left side
+    0,   0,   0,
+    0,   0,  30,
+    0, 150,  30,
+    0,   0,   0,
+    0, 150,  30,
+    0, 150,   0,))
+
+;; translation-3d
+
+(defn translation-3d-render [canvas {:keys [x y]}]
+  (let [gl (.getContext canvas "webgl2")
+        program (create-program gl
+                  three-d-vertex-shader-source
+                  three-d-fragment-shader-source)
+        vao (let [vao (.createVertexArray gl)]
+              (.bindVertexArray gl vao)
+              vao)
+        pos-buffer (create-pos-buffer gl program 3)
+        color-location (.getUniformLocation gl program "u_color")
+        matrix-location (.getUniformLocation gl program "u_matrix")]
+    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. three-d-geom-2) gl.STATIC_DRAW)
+    (resize-canvas canvas)
+    (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
+    (.clearColor gl 0 0 0 0)
+    (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
+    (.useProgram gl program)
+    (.bindVertexArray gl vao)
+    (.uniform4f gl color-location 1 0 0.5 1)
+    (.uniformMatrix4fv gl matrix-location false
+      (->> (projection-matrix-3d gl.canvas.clientWidth gl.canvas.clientHeight 400)
+           (multiply-matrices 4 (translation-matrix-3d x y 0))
+           (multiply-matrices 4 (x-rotation-matrix-3d (deg->rad 40)))
+           (multiply-matrices 4 (y-rotation-matrix-3d (deg->rad 25)))
+           (multiply-matrices 4 (z-rotation-matrix-3d (deg->rad 325)))))
+    (.drawArrays gl gl.TRIANGLES 0 (* 16 6))))
+
+(defn translation-3d-init [canvas]
+  (let [*state (atom {:x 0 :y 0})]
+    (events/listen js/window "mousemove"
+      (fn [event]
+        (let [bounds (.getBoundingClientRect canvas)
+              x (- (.-clientX event) (.-left bounds))
+              y (- (.-clientY event) (.-top bounds))]
+          (translation-3d-render canvas (swap! *state assoc :x x :y y)))))
+    (translation-3d-render canvas @*state)))
+
+(defexample iglu.core/translation-3d
+  {:with-card card}
+  (->> (iglu.examples/create-canvas card)
+       (iglu.examples/translation-3d-init)))
+
+;; rotation-3d
+
+(defn rotation-3d-render [canvas {:keys [tx ty r]}]
+  (let [gl (.getContext canvas "webgl2")
+        program (create-program gl
+                  three-d-vertex-shader-source
+                  three-d-fragment-shader-source)
+        vao (let [vao (.createVertexArray gl)]
+              (.bindVertexArray gl vao)
+              vao)
+        pos-buffer (create-pos-buffer gl program 3)
+        color-location (.getUniformLocation gl program "u_color")
+        matrix-location (.getUniformLocation gl program "u_matrix")]
+    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. three-d-geom-2) gl.STATIC_DRAW)
+    (resize-canvas canvas)
+    (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
+    (.clearColor gl 0 0 0 0)
+    (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
+    (.useProgram gl program)
+    (.bindVertexArray gl vao)
+    (.uniform4f gl color-location 1 0 0.5 1)
+    (.uniformMatrix4fv gl matrix-location false
+      (->> (projection-matrix-3d gl.canvas.clientWidth gl.canvas.clientHeight 400)
+           (multiply-matrices 4 (translation-matrix-3d tx ty 0))
+           (multiply-matrices 4 (x-rotation-matrix-3d r))
+           (multiply-matrices 4 (y-rotation-matrix-3d r))
+           (multiply-matrices 4 (z-rotation-matrix-3d r))
+           ;; make it rotate around its center
+           (multiply-matrices 4 (translation-matrix-3d -50 -75 0))))
+    (.drawArrays gl gl.TRIANGLES 0 (* 16 6))))
+
+(defn rotation-3d-init [canvas]
+  (let [tx 100
+        ty 100
+        *state (atom {:tx tx :ty ty :r 0})]
+    (events/listen js/window "mousemove"
+      (fn [event]
+        (let [bounds (.getBoundingClientRect canvas)
+              rx (/ (- (.-clientX event) (.-left bounds) tx)
+                    (.-width bounds))
+              ry (/ (- (.-clientY event) (.-top bounds) ty)
+                    (.-height bounds))]
+          (rotation-3d-render canvas (swap! *state assoc :r (Math/atan2 rx ry))))))
+    (rotation-3d-render canvas @*state)))
+
+(defexample iglu.core/rotation-3d
+  {:with-card card}
+  (->> (iglu.examples/create-canvas card)
+       (iglu.examples/rotation-3d-init)))
+
+;; scale-3d
+
+(defn scale-3d-render [canvas {:keys [tx ty sx sy]}]
+  (let [gl (.getContext canvas "webgl2")
+        program (create-program gl
+                  three-d-vertex-shader-source
+                  three-d-fragment-shader-source)
+        vao (let [vao (.createVertexArray gl)]
+              (.bindVertexArray gl vao)
+              vao)
+        pos-buffer (create-pos-buffer gl program 3)
+        color-location (.getUniformLocation gl program "u_color")
+        matrix-location (.getUniformLocation gl program "u_matrix")]
+    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. three-d-geom-2) gl.STATIC_DRAW)
+    (resize-canvas canvas)
+    (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
+    (.clearColor gl 0 0 0 0)
+    (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
+    (.useProgram gl program)
+    (.bindVertexArray gl vao)
+    (.uniform4f gl color-location 1 0 0.5 1)
+    (.uniformMatrix4fv gl matrix-location false
+      (->> (projection-matrix-3d gl.canvas.clientWidth gl.canvas.clientHeight 400)
+           (multiply-matrices 4 (translation-matrix-3d tx ty 0))
+           (multiply-matrices 4 (x-rotation-matrix-3d (deg->rad 40)))
+           (multiply-matrices 4 (y-rotation-matrix-3d (deg->rad 25)))
+           (multiply-matrices 4 (z-rotation-matrix-3d (deg->rad 325)))
+           (multiply-matrices 4 (scaling-matrix-3d sx sy 1))))
+    (.drawArrays gl gl.TRIANGLES 0 (* 16 6))))
+
+(defn scale-3d-init [canvas]
+  (let [tx 100
+        ty 100
+        *state (atom {:tx tx :ty ty :sx 1 :sy 1})]
+    (events/listen js/window "mousemove"
+      (fn [event]
+        (let [bounds (.getBoundingClientRect canvas)
+              sx (/ (- (.-clientX event) (.-left bounds) tx)
+                    (.-width bounds))
+              sy (/ (- (.-clientY event) (.-top bounds) ty)
+                    (.-height bounds))]
+          (scale-3d-render canvas (swap! *state assoc :sx sx :sy sy)))))
+    (scale-3d-render canvas @*state)))
+
+(defexample iglu.core/scale-3d
+  {:with-card card}
+  (->> (iglu.examples/create-canvas card)
+       (iglu.examples/scale-3d-init)))
 
