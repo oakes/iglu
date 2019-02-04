@@ -553,12 +553,22 @@
     0,  0, sz,  0,
     0,  0,  0,  1,))
 
-(defn projection-matrix-3d [width height depth]
-  (array
-    (/ 2 width) 0 0 0
-    0 (/ -2 height) 0 0
-    0 0 (/ 2 depth) 0
-    -1 1 0 1))
+(defn ortho-matrix-3d [{:keys [left right bottom top near far]}]
+  (let [width (- right left)
+        height (- top bottom)
+        depth (- near far)]
+    (array
+      (/ 2 width) 0 0 0
+      0 (/ 2 height) 0 0
+      0 0 (/ 2 depth) 0
+      
+      (/ (+ left right)
+         (- left right))
+      (/ (+ bottom top)
+         (- bottom top))
+      (/ (+ near far)
+         (- near far))
+      1)))
 
 (def three-d-vertex-shader-source
   "#version 300 es
@@ -590,8 +600,6 @@
     outColor = v_color;
   }")
 
-
-
 ;; translation-3d
 
 (defn translation-3d-render [canvas {:keys [x y]}]
@@ -620,7 +628,12 @@
     (.useProgram gl program)
     (.bindVertexArray gl vao)
     (.uniformMatrix4fv gl matrix-location false
-      (->> (projection-matrix-3d gl.canvas.clientWidth gl.canvas.clientHeight 400)
+      (->> (ortho-matrix-3d {:left 0
+                             :right gl.canvas.clientWidth
+                             :bottom gl.canvas.clientHeight
+                             :top 0
+                             :near 400
+                             :far -400})
            (multiply-matrices 4 (translation-matrix-3d x y 0))
            (multiply-matrices 4 (x-rotation-matrix-3d (deg->rad 40)))
            (multiply-matrices 4 (y-rotation-matrix-3d (deg->rad 25)))
@@ -670,7 +683,12 @@
     (.useProgram gl program)
     (.bindVertexArray gl vao)
     (.uniformMatrix4fv gl matrix-location false
-      (->> (projection-matrix-3d gl.canvas.clientWidth gl.canvas.clientHeight 400)
+      (->> (ortho-matrix-3d {:left 0
+                             :right gl.canvas.clientWidth
+                             :bottom gl.canvas.clientHeight
+                             :top 0
+                             :near 400
+                             :far -400})
            (multiply-matrices 4 (translation-matrix-3d tx ty 0))
            (multiply-matrices 4 (x-rotation-matrix-3d r))
            (multiply-matrices 4 (y-rotation-matrix-3d r))
@@ -726,7 +744,12 @@
     (.useProgram gl program)
     (.bindVertexArray gl vao)
     (.uniformMatrix4fv gl matrix-location false
-      (->> (projection-matrix-3d gl.canvas.clientWidth gl.canvas.clientHeight 400)
+      (->> (ortho-matrix-3d {:left 0
+                             :right gl.canvas.clientWidth
+                             :bottom gl.canvas.clientHeight
+                             :top 0
+                             :near 400
+                             :far -400})
            (multiply-matrices 4 (translation-matrix-3d tx ty 0))
            (multiply-matrices 4 (x-rotation-matrix-3d (deg->rad 40)))
            (multiply-matrices 4 (y-rotation-matrix-3d (deg->rad 25)))
