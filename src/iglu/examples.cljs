@@ -624,3 +624,63 @@
   (->> (iglu.examples/create-canvas card)
        (iglu.examples/scale-3d-init)))
 
+;; perspective-3d
+
+(defn perspective-3d-render [canvas {:keys [tx ty fudge]}]
+  (let [gl (.getContext canvas "webgl2")
+        program (create-program gl
+                  data/three-d-perspective-vertex-shader-source
+                  data/three-d-fragment-shader-source)
+        vao (let [vao (.createVertexArray gl)]
+              (.bindVertexArray gl vao)
+              vao)
+        pos-buffer (create-buffer gl program "a_position" {:size 3})
+        color-buffer (create-buffer gl program "a_color" {:size 3
+                                                          :type gl.UNSIGNED_BYTE
+                                                          :normalize true})
+        matrix-location (.getUniformLocation gl program "u_matrix")
+        fudge-location (.getUniformLocation gl program "u_fudgeFactor")]
+    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-3d) gl.STATIC_DRAW)
+    (.bindBuffer gl gl.ARRAY_BUFFER color-buffer)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. data/f-3d-colors) gl.STATIC_DRAW)
+    (resize-canvas canvas)
+    (.enable gl gl.CULL_FACE)
+    (.enable gl gl.DEPTH_TEST)
+    (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
+    (.clearColor gl 0 0 0 0)
+    (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
+    (.useProgram gl program)
+    (.bindVertexArray gl vao)
+    (.uniform1f gl fudge-location fudge)
+    (.uniformMatrix4fv gl matrix-location false
+      (->> (ortho-matrix-3d {:left 0
+                             :right gl.canvas.clientWidth
+                             :bottom gl.canvas.clientHeight
+                             :top 0
+                             :near 400
+                             :far -400})
+           (multiply-matrices 4 (translation-matrix-3d tx ty 0))
+           (multiply-matrices 4 (x-rotation-matrix-3d (deg->rad 40)))
+           (multiply-matrices 4 (y-rotation-matrix-3d (deg->rad 25)))
+           (multiply-matrices 4 (z-rotation-matrix-3d (deg->rad 325)))))
+    (.drawArrays gl gl.TRIANGLES 0 (* 16 6))))
+
+(defn perspective-3d-init [canvas]
+  (let [tx 100
+        ty 100
+        *state (atom {:tx tx :ty ty :fudge 1})]
+    (events/listen js/window "mousemove"
+      (fn [event]
+        (let [bounds (.getBoundingClientRect canvas)
+              fudge (-> (- (.-clientX event) (.-left bounds) tx)
+                        (/ (.-width bounds))
+                        (* 2))]
+          (perspective-3d-render canvas (swap! *state assoc :fudge fudge)))))
+    (perspective-3d-render canvas @*state)))
+
+(defexample iglu.core/perspective-3d
+  {:with-card card}
+  (->> (iglu.examples/create-canvas card)
+       (iglu.examples/perspective-3d-init)))
+
