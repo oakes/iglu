@@ -669,8 +669,8 @@
                                    :far 2000})
            (multiply-matrices 4 (translation-matrix-3d tx ty -150))
            (multiply-matrices 4 (x-rotation-matrix-3d (deg->rad 180)))
-           (multiply-matrices 4 (y-rotation-matrix-3d (deg->rad 40)))
-           (multiply-matrices 4 (z-rotation-matrix-3d (deg->rad 30)))))
+           (multiply-matrices 4 (y-rotation-matrix-3d 0))
+           (multiply-matrices 4 (z-rotation-matrix-3d 0))))
     (.drawArrays gl gl.TRIANGLES 0 (* 16 6))))
 
 (defn perspective-3d-init [canvas]
