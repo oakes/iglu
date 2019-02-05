@@ -448,6 +448,13 @@
          (- near far))
       1)))
 
+(defn z->w-matrix-3d [fudge-factor]
+  (array
+    1 0 0 0
+    0 1 0 0
+    0 0 1 fudge-factor
+    0 0 0 1))
+
 ;; translation-3d
 
 (defn translation-3d-render [canvas {:keys [x y]}]
@@ -629,7 +636,7 @@
 (defn perspective-3d-render [canvas {:keys [tx ty fudge]}]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
-                  data/three-d-perspective-vertex-shader-source
+                  data/three-d-vertex-shader-source
                   data/three-d-fragment-shader-source)
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
@@ -638,8 +645,7 @@
         color-buffer (create-buffer gl program "a_color" {:size 3
                                                           :type gl.UNSIGNED_BYTE
                                                           :normalize true})
-        matrix-location (.getUniformLocation gl program "u_matrix")
-        fudge-location (.getUniformLocation gl program "u_fudgeFactor")]
+        matrix-location (.getUniformLocation gl program "u_matrix")]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
     (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-3d) gl.STATIC_DRAW)
     (.bindBuffer gl gl.ARRAY_BUFFER color-buffer)
@@ -652,14 +658,14 @@
     (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
     (.useProgram gl program)
     (.bindVertexArray gl vao)
-    (.uniform1f gl fudge-location fudge)
     (.uniformMatrix4fv gl matrix-location false
-      (->> (ortho-matrix-3d {:left 0
-                             :right gl.canvas.clientWidth
-                             :bottom gl.canvas.clientHeight
-                             :top 0
-                             :near 400
-                             :far -400})
+      (->> (z->w-matrix-3d fudge)
+           (multiply-matrices 4 (ortho-matrix-3d {:left 0
+                                                  :right gl.canvas.clientWidth
+                                                  :bottom gl.canvas.clientHeight
+                                                  :top 0
+                                                  :near 400
+                                                  :far -400}))
            (multiply-matrices 4 (translation-matrix-3d tx ty 0))
            (multiply-matrices 4 (x-rotation-matrix-3d (deg->rad 40)))
            (multiply-matrices 4 (y-rotation-matrix-3d (deg->rad 25)))

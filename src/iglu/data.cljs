@@ -152,24 +152,6 @@
     outColor = v_color;
   }")
 
-(def three-d-perspective-vertex-shader-source
-  "#version 300 es
-  
-  in vec4 a_position;
-  in vec4 a_color;
-  uniform mat4 u_matrix;
-  out vec4 v_color;
-  uniform float u_fudgeFactor;
-  
-  void main() {
-    vec4 position = u_matrix * a_position;
-    float zToDivideBy = 1.0 + position.z * u_fudgeFactor;
-    gl_Position = vec4(position.xyz,  zToDivideBy);
-    // same as:
-    // gl_Position = vec4(position.xy / zToDivideBy, position.zw);
-    v_color = a_color;
-  }")
-
 (def f-2d
   (array
     ;; left column
