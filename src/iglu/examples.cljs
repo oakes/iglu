@@ -200,7 +200,22 @@
 
 ;; translation
 
-(defn translation-render [canvas {:keys [x y]}]
+(defn translation-render [canvas
+                          {:keys [gl program vao matrix-location color-location]}
+                          {:keys [x y]}]
+  (resize-canvas canvas)
+  (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
+  (.clearColor gl 0 0 0 0)
+  (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
+  (.useProgram gl program)
+  (.bindVertexArray gl vao)
+  (.uniform4f gl color-location 1 0 0.5 1)
+  (.uniformMatrix3fv gl matrix-location false
+    (->> (projection-matrix gl.canvas.clientWidth gl.canvas.clientHeight)
+         (multiply-matrices 3 (translation-matrix x y))))
+  (.drawArrays gl gl.TRIANGLES 0 18))
+
+(defn translation-init [canvas]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
                   data/two-d-vertex-shader-source
@@ -210,30 +225,22 @@
               vao)
         pos-buffer (create-buffer gl program "a_position")
         color-location (.getUniformLocation gl program "u_color")
-        matrix-location (.getUniformLocation gl program "u_matrix")]
+        matrix-location (.getUniformLocation gl program "u_matrix")
+        props {:gl gl
+               :program program
+               :vao vao
+               :color-location color-location
+               :matrix-location matrix-location}
+        *state (atom {:x 0 :y 0})]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
     (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-2d) gl.STATIC_DRAW)
-    (resize-canvas canvas)
-    (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
-    (.clearColor gl 0 0 0 0)
-    (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
-    (.useProgram gl program)
-    (.bindVertexArray gl vao)
-    (.uniform4f gl color-location 1 0 0.5 1)
-    (.uniformMatrix3fv gl matrix-location false
-      (->> (projection-matrix gl.canvas.clientWidth gl.canvas.clientHeight)
-           (multiply-matrices 3 (translation-matrix x y))))
-    (.drawArrays gl gl.TRIANGLES 0 18)))
-
-(defn translation-init [canvas]
-  (let [*state (atom {:x 0 :y 0})]
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
               x (- (.-clientX event) (.-left bounds))
               y (- (.-clientY event) (.-top bounds))]
-          (translation-render canvas (swap! *state assoc :x x :y y)))))
-    (translation-render canvas @*state)))
+          (translation-render canvas props (swap! *state assoc :x x :y y)))))
+    (translation-render canvas props @*state)))
 
 (defexample iglu.core/translation
   {:with-card card}
@@ -242,7 +249,25 @@
 
 ;; rotation
 
-(defn rotation-render [canvas {:keys [tx ty r]}]
+(defn rotation-render [canvas
+                       {:keys [gl program vao matrix-location color-location]}
+                       {:keys [tx ty r]}]
+  (resize-canvas canvas)
+  (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
+  (.clearColor gl 0 0 0 0)
+  (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
+  (.useProgram gl program)
+  (.bindVertexArray gl vao)
+  (.uniform4f gl color-location 1 0 0.5 1)
+  (.uniformMatrix3fv gl matrix-location false
+    (->> (projection-matrix gl.canvas.clientWidth gl.canvas.clientHeight)
+         (multiply-matrices 3 (translation-matrix tx ty))
+         (multiply-matrices 3 (rotation-matrix r))
+         ;; make it rotate around its center
+         (multiply-matrices 3 (translation-matrix -50 -75))))
+  (.drawArrays gl gl.TRIANGLES 0 18))
+
+(defn rotation-init [canvas]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
                   data/two-d-vertex-shader-source
@@ -252,28 +277,17 @@
               vao)
         pos-buffer (create-buffer gl program "a_position")
         color-location (.getUniformLocation gl program "u_color")
-        matrix-location (.getUniformLocation gl program "u_matrix")]
-    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-2d) gl.STATIC_DRAW)
-    (resize-canvas canvas)
-    (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
-    (.clearColor gl 0 0 0 0)
-    (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
-    (.useProgram gl program)
-    (.bindVertexArray gl vao)
-    (.uniform4f gl color-location 1 0 0.5 1)
-    (.uniformMatrix3fv gl matrix-location false
-      (->> (projection-matrix gl.canvas.clientWidth gl.canvas.clientHeight)
-           (multiply-matrices 3 (translation-matrix tx ty))
-           (multiply-matrices 3 (rotation-matrix r))
-           ;; make it rotate around its center
-           (multiply-matrices 3 (translation-matrix -50 -75))))
-    (.drawArrays gl gl.TRIANGLES 0 18)))
-
-(defn rotation-init [canvas]
-  (let [tx 100
+        matrix-location (.getUniformLocation gl program "u_matrix")
+        props {:gl gl
+               :program program
+               :vao vao
+               :color-location color-location
+               :matrix-location matrix-location}
+        tx 100
         ty 100
         *state (atom {:tx tx :ty ty :r 0})]
+    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-2d) gl.STATIC_DRAW)
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -281,8 +295,8 @@
                     (.-width bounds))
               ry (/ (- (.-clientY event) (.-top bounds) ty)
                     (.-height bounds))]
-          (rotation-render canvas (swap! *state assoc :r (Math/atan2 rx ry))))))
-    (rotation-render canvas @*state)))
+          (rotation-render canvas props (swap! *state assoc :r (Math/atan2 rx ry))))))
+    (rotation-render canvas props @*state)))
 
 (defexample iglu.core/rotation
   {:with-card card}
@@ -291,7 +305,24 @@
 
 ;; scale
 
-(defn scale-render [canvas {:keys [tx ty sx sy]}]
+(defn scale-render [canvas
+                    {:keys [gl program vao matrix-location color-location]}
+                    {:keys [tx ty sx sy]}]
+  (resize-canvas canvas)
+  (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
+  (.clearColor gl 0 0 0 0)
+  (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
+  (.useProgram gl program)
+  (.bindVertexArray gl vao)
+  (.uniform4f gl color-location 1 0 0.5 1)
+  (.uniformMatrix3fv gl matrix-location false
+    (->> (projection-matrix gl.canvas.clientWidth gl.canvas.clientHeight)
+         (multiply-matrices 3 (translation-matrix tx ty))
+         (multiply-matrices 3 (rotation-matrix 0))
+         (multiply-matrices 3 (scaling-matrix sx sy))))
+  (.drawArrays gl gl.TRIANGLES 0 18))
+
+(defn scale-init [canvas]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
                   data/two-d-vertex-shader-source
@@ -301,27 +332,17 @@
               vao)
         pos-buffer (create-buffer gl program "a_position")
         color-location (.getUniformLocation gl program "u_color")
-        matrix-location (.getUniformLocation gl program "u_matrix")]
-    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-2d) gl.STATIC_DRAW)
-    (resize-canvas canvas)
-    (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
-    (.clearColor gl 0 0 0 0)
-    (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
-    (.useProgram gl program)
-    (.bindVertexArray gl vao)
-    (.uniform4f gl color-location 1 0 0.5 1)
-    (.uniformMatrix3fv gl matrix-location false
-      (->> (projection-matrix gl.canvas.clientWidth gl.canvas.clientHeight)
-           (multiply-matrices 3 (translation-matrix tx ty))
-           (multiply-matrices 3 (rotation-matrix 0))
-           (multiply-matrices 3 (scaling-matrix sx sy))))
-    (.drawArrays gl gl.TRIANGLES 0 18)))
-
-(defn scale-init [canvas]
-  (let [tx 100
+        matrix-location (.getUniformLocation gl program "u_matrix")
+        props {:gl gl
+               :program program
+               :vao vao
+               :color-location color-location
+               :matrix-location matrix-location}
+        tx 100
         ty 100
         *state (atom {:tx tx :ty ty :sx 1 :sy 1})]
+    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-2d) gl.STATIC_DRAW)
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -329,8 +350,8 @@
                     (.-width bounds))
               sy (/ (- (.-clientY event) (.-top bounds) ty)
                     (.-height bounds))]
-          (scale-render canvas (swap! *state assoc :sx sx :sy sy)))))
-    (scale-render canvas @*state)))
+          (scale-render canvas props (swap! *state assoc :sx sx :sy sy)))))
+    (scale-render canvas props @*state)))
 
 (defexample iglu.core/scale
   {:with-card card}
@@ -339,19 +360,11 @@
 
 ;; rotation-multi
 
-(defn rotation-multi-render [canvas {:keys [tx ty r]}]
-  (let [gl (.getContext canvas "webgl2")
-        program (create-program gl
-                  data/two-d-vertex-shader-source
-                  data/two-d-fragment-shader-source)
-        vao (let [vao (.createVertexArray gl)]
-              (.bindVertexArray gl vao)
-              vao)
-        pos-buffer (create-buffer gl program "a_position")
-        color-location (.getUniformLocation gl program "u_color")
-        matrix-location (.getUniformLocation gl program "u_matrix")]
-    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-2d) gl.STATIC_DRAW)
+(defn rotation-multi-render [canvas
+                             {:keys [gl program vao matrix-location color-location]}
+                             {:keys [tx ty r]}]
+  (let []
+    
     (resize-canvas canvas)
     (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
     (.clearColor gl 0 0 0 0)
@@ -370,9 +383,26 @@
           (recur (inc i) matrix))))))
 
 (defn rotation-multi-init [canvas]
-  (let [tx 100
+  (let [gl (.getContext canvas "webgl2")
+        program (create-program gl
+                  data/two-d-vertex-shader-source
+                  data/two-d-fragment-shader-source)
+        vao (let [vao (.createVertexArray gl)]
+              (.bindVertexArray gl vao)
+              vao)
+        pos-buffer (create-buffer gl program "a_position")
+        color-location (.getUniformLocation gl program "u_color")
+        matrix-location (.getUniformLocation gl program "u_matrix")
+        props {:gl gl
+               :program program
+               :vao vao
+               :color-location color-location
+               :matrix-location matrix-location}
+        tx 100
         ty 100
         *state (atom {:tx tx :ty ty :r 0})]
+    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-2d) gl.STATIC_DRAW)
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -380,8 +410,8 @@
                     (.-width bounds))
               ry (/ (- (.-clientY event) (.-top bounds) ty)
                     (.-height bounds))]
-          (rotation-multi-render canvas (swap! *state assoc :r (Math/atan2 rx ry))))))
-    (rotation-multi-render canvas @*state)))
+          (rotation-multi-render canvas props (swap! *state assoc :r (Math/atan2 rx ry))))))
+    (rotation-multi-render canvas props @*state)))
 
 (defexample iglu.core/rotation-multi
   {:with-card card}
@@ -460,7 +490,31 @@
 
 ;; translation-3d
 
-(defn translation-3d-render [canvas {:keys [x y]}]
+(defn translation-3d-render [canvas
+                             {:keys [gl program vao matrix-location]}
+                             {:keys [x y]}]
+  (resize-canvas canvas)
+  (.enable gl gl.CULL_FACE)
+  (.enable gl gl.DEPTH_TEST)
+  (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
+  (.clearColor gl 0 0 0 0)
+  (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
+  (.useProgram gl program)
+  (.bindVertexArray gl vao)
+  (.uniformMatrix4fv gl matrix-location false
+    (->> (ortho-matrix-3d {:left 0
+                           :right gl.canvas.clientWidth
+                           :bottom gl.canvas.clientHeight
+                           :top 0
+                           :near 400
+                           :far -400})
+         (multiply-matrices 4 (translation-matrix-3d x y 0))
+         (multiply-matrices 4 (x-rotation-matrix-3d (deg->rad 40)))
+         (multiply-matrices 4 (y-rotation-matrix-3d (deg->rad 25)))
+         (multiply-matrices 4 (z-rotation-matrix-3d (deg->rad 325)))))
+  (.drawArrays gl gl.TRIANGLES 0 (* 16 6)))
+
+(defn translation-3d-init [canvas]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
                   data/three-d-vertex-shader-source
@@ -472,41 +526,23 @@
         color-buffer (create-buffer gl program "a_color" {:size 3
                                                           :type gl.UNSIGNED_BYTE
                                                           :normalize true})
-        matrix-location (.getUniformLocation gl program "u_matrix")]
+        matrix-location (.getUniformLocation gl program "u_matrix")
+        props {:gl gl
+               :program program
+               :vao vao
+               :matrix-location matrix-location}
+        *state (atom {:x 0 :y 0})]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
     (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-3d) gl.STATIC_DRAW)
     (.bindBuffer gl gl.ARRAY_BUFFER color-buffer)
     (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. data/f-3d-colors) gl.STATIC_DRAW)
-    (resize-canvas canvas)
-    (.enable gl gl.CULL_FACE)
-    (.enable gl gl.DEPTH_TEST)
-    (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
-    (.clearColor gl 0 0 0 0)
-    (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
-    (.useProgram gl program)
-    (.bindVertexArray gl vao)
-    (.uniformMatrix4fv gl matrix-location false
-      (->> (ortho-matrix-3d {:left 0
-                             :right gl.canvas.clientWidth
-                             :bottom gl.canvas.clientHeight
-                             :top 0
-                             :near 400
-                             :far -400})
-           (multiply-matrices 4 (translation-matrix-3d x y 0))
-           (multiply-matrices 4 (x-rotation-matrix-3d (deg->rad 40)))
-           (multiply-matrices 4 (y-rotation-matrix-3d (deg->rad 25)))
-           (multiply-matrices 4 (z-rotation-matrix-3d (deg->rad 325)))))
-    (.drawArrays gl gl.TRIANGLES 0 (* 16 6))))
-
-(defn translation-3d-init [canvas]
-  (let [*state (atom {:x 0 :y 0})]
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
               x (- (.-clientX event) (.-left bounds))
               y (- (.-clientY event) (.-top bounds))]
-          (translation-3d-render canvas (swap! *state assoc :x x :y y)))))
-    (translation-3d-render canvas @*state)))
+          (translation-3d-render canvas props (swap! *state assoc :x x :y y)))))
+    (translation-3d-render canvas props @*state)))
 
 (defexample iglu.core/translation-3d
   {:with-card card}
@@ -515,7 +551,33 @@
 
 ;; rotation-3d
 
-(defn rotation-3d-render [canvas {:keys [tx ty r]}]
+(defn rotation-3d-render [canvas
+                          {:keys [gl program vao matrix-location]}
+                          {:keys [tx ty r]}]
+  (resize-canvas canvas)
+  (.enable gl gl.CULL_FACE)
+  (.enable gl gl.DEPTH_TEST)
+  (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
+  (.clearColor gl 0 0 0 0)
+  (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
+  (.useProgram gl program)
+  (.bindVertexArray gl vao)
+  (.uniformMatrix4fv gl matrix-location false
+    (->> (ortho-matrix-3d {:left 0
+                           :right gl.canvas.clientWidth
+                           :bottom gl.canvas.clientHeight
+                           :top 0
+                           :near 400
+                           :far -400})
+         (multiply-matrices 4 (translation-matrix-3d tx ty 0))
+         (multiply-matrices 4 (x-rotation-matrix-3d r))
+         (multiply-matrices 4 (y-rotation-matrix-3d r))
+         (multiply-matrices 4 (z-rotation-matrix-3d r))
+         ;; make it rotate around its center
+         (multiply-matrices 4 (translation-matrix-3d -50 -75 0))))
+  (.drawArrays gl gl.TRIANGLES 0 (* 16 6)))
+
+(defn rotation-3d-init [canvas]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
                   data/three-d-vertex-shader-source
@@ -527,38 +589,18 @@
         color-buffer (create-buffer gl program "a_color" {:size 3
                                                           :type gl.UNSIGNED_BYTE
                                                           :normalize true})
-        matrix-location (.getUniformLocation gl program "u_matrix")]
+        matrix-location (.getUniformLocation gl program "u_matrix")
+        props {:gl gl
+               :program program
+               :vao vao
+               :matrix-location matrix-location}
+        tx 100
+        ty 100
+        *state (atom {:tx tx :ty ty :r 0})]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
     (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-3d) gl.STATIC_DRAW)
     (.bindBuffer gl gl.ARRAY_BUFFER color-buffer)
     (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. data/f-3d-colors) gl.STATIC_DRAW)
-    (resize-canvas canvas)
-    (.enable gl gl.CULL_FACE)
-    (.enable gl gl.DEPTH_TEST)
-    (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
-    (.clearColor gl 0 0 0 0)
-    (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
-    (.useProgram gl program)
-    (.bindVertexArray gl vao)
-    (.uniformMatrix4fv gl matrix-location false
-      (->> (ortho-matrix-3d {:left 0
-                             :right gl.canvas.clientWidth
-                             :bottom gl.canvas.clientHeight
-                             :top 0
-                             :near 400
-                             :far -400})
-           (multiply-matrices 4 (translation-matrix-3d tx ty 0))
-           (multiply-matrices 4 (x-rotation-matrix-3d r))
-           (multiply-matrices 4 (y-rotation-matrix-3d r))
-           (multiply-matrices 4 (z-rotation-matrix-3d r))
-           ;; make it rotate around its center
-           (multiply-matrices 4 (translation-matrix-3d -50 -75 0))))
-    (.drawArrays gl gl.TRIANGLES 0 (* 16 6))))
-
-(defn rotation-3d-init [canvas]
-  (let [tx 100
-        ty 100
-        *state (atom {:tx tx :ty ty :r 0})]
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -566,8 +608,8 @@
                     (.-width bounds))
               ry (/ (- (.-clientY event) (.-top bounds) ty)
                     (.-height bounds))]
-          (rotation-3d-render canvas (swap! *state assoc :r (Math/atan2 rx ry))))))
-    (rotation-3d-render canvas @*state)))
+          (rotation-3d-render canvas props (swap! *state assoc :r (Math/atan2 rx ry))))))
+    (rotation-3d-render canvas props @*state)))
 
 (defexample iglu.core/rotation-3d
   {:with-card card}
@@ -576,7 +618,32 @@
 
 ;; scale-3d
 
-(defn scale-3d-render [canvas {:keys [tx ty sx sy]}]
+(defn scale-3d-render [canvas
+                       {:keys [gl program vao matrix-location]}
+                       {:keys [tx ty sx sy]}]
+  (resize-canvas canvas)
+  (.enable gl gl.CULL_FACE)
+  (.enable gl gl.DEPTH_TEST)
+  (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
+  (.clearColor gl 0 0 0 0)
+  (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
+  (.useProgram gl program)
+  (.bindVertexArray gl vao)
+  (.uniformMatrix4fv gl matrix-location false
+    (->> (ortho-matrix-3d {:left 0
+                           :right gl.canvas.clientWidth
+                           :bottom gl.canvas.clientHeight
+                           :top 0
+                           :near 400
+                           :far -400})
+         (multiply-matrices 4 (translation-matrix-3d tx ty 0))
+         (multiply-matrices 4 (x-rotation-matrix-3d (deg->rad 40)))
+         (multiply-matrices 4 (y-rotation-matrix-3d (deg->rad 25)))
+         (multiply-matrices 4 (z-rotation-matrix-3d (deg->rad 325)))
+         (multiply-matrices 4 (scaling-matrix-3d sx sy 1))))
+  (.drawArrays gl gl.TRIANGLES 0 (* 16 6)))
+
+(defn scale-3d-init [canvas]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
                   data/three-d-vertex-shader-source
@@ -588,37 +655,18 @@
         color-buffer (create-buffer gl program "a_color" {:size 3
                                                           :type gl.UNSIGNED_BYTE
                                                           :normalize true})
-        matrix-location (.getUniformLocation gl program "u_matrix")]
+        matrix-location (.getUniformLocation gl program "u_matrix")
+        props {:gl gl
+               :program program
+               :vao vao
+               :matrix-location matrix-location}
+        tx 100
+        ty 100
+        *state (atom {:tx tx :ty ty :sx 1 :sy 1})]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
     (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-3d) gl.STATIC_DRAW)
     (.bindBuffer gl gl.ARRAY_BUFFER color-buffer)
     (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. data/f-3d-colors) gl.STATIC_DRAW)
-    (resize-canvas canvas)
-    (.enable gl gl.CULL_FACE)
-    (.enable gl gl.DEPTH_TEST)
-    (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
-    (.clearColor gl 0 0 0 0)
-    (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
-    (.useProgram gl program)
-    (.bindVertexArray gl vao)
-    (.uniformMatrix4fv gl matrix-location false
-      (->> (ortho-matrix-3d {:left 0
-                             :right gl.canvas.clientWidth
-                             :bottom gl.canvas.clientHeight
-                             :top 0
-                             :near 400
-                             :far -400})
-           (multiply-matrices 4 (translation-matrix-3d tx ty 0))
-           (multiply-matrices 4 (x-rotation-matrix-3d (deg->rad 40)))
-           (multiply-matrices 4 (y-rotation-matrix-3d (deg->rad 25)))
-           (multiply-matrices 4 (z-rotation-matrix-3d (deg->rad 325)))
-           (multiply-matrices 4 (scaling-matrix-3d sx sy 1))))
-    (.drawArrays gl gl.TRIANGLES 0 (* 16 6))))
-
-(defn scale-3d-init [canvas]
-  (let [tx 100
-        ty 100
-        *state (atom {:tx tx :ty ty :sx 1 :sy 1})]
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -626,8 +674,8 @@
                     (.-width bounds))
               sy (/ (- (.-clientY event) (.-top bounds) ty)
                     (.-height bounds))]
-          (scale-3d-render canvas (swap! *state assoc :sx sx :sy sy)))))
-    (scale-3d-render canvas @*state)))
+          (scale-3d-render canvas props (swap! *state assoc :sx sx :sy sy)))))
+    (scale-3d-render canvas props @*state)))
 
 (defexample iglu.core/scale-3d
   {:with-card card}
@@ -636,7 +684,30 @@
 
 ;; perspective-3d
 
-(defn perspective-3d-render [canvas {:keys [tx ty]}]
+(defn perspective-3d-render [canvas
+                             {:keys [gl program vao matrix-location]}
+                             {:keys [tx ty]}]
+  (resize-canvas canvas)
+  (.enable gl gl.CULL_FACE)
+  (.enable gl gl.DEPTH_TEST)
+  (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
+  (.clearColor gl 0 0 0 0)
+  (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
+  (.useProgram gl program)
+  (.bindVertexArray gl vao)
+  (.uniformMatrix4fv gl matrix-location false
+    (->> (perspective-matrix-3d {:field-of-view 90
+                                 :aspect (/ gl.canvas.clientWidth
+                                            gl.canvas.clientHeight)
+                                 :near 1
+                                 :far 2000})
+         (multiply-matrices 4 (translation-matrix-3d tx ty -150))
+         (multiply-matrices 4 (x-rotation-matrix-3d (deg->rad 180)))
+         (multiply-matrices 4 (y-rotation-matrix-3d 0))
+         (multiply-matrices 4 (z-rotation-matrix-3d 0))))
+  (.drawArrays gl gl.TRIANGLES 0 (* 16 6)))
+
+(defn perspective-3d-init [canvas]
   (let [gl (.getContext canvas "webgl2")
         program (create-program gl
                   data/three-d-vertex-shader-source
@@ -648,43 +719,24 @@
         color-buffer (create-buffer gl program "a_color" {:size 3
                                                           :type gl.UNSIGNED_BYTE
                                                           :normalize true})
-        matrix-location (.getUniformLocation gl program "u_matrix")]
+        matrix-location (.getUniformLocation gl program "u_matrix")
+        props {:gl gl
+               :program program
+               :vao vao
+               :matrix-location matrix-location}
+        *state (atom {:tx 0 :ty 0})]
     (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
     (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-3d) gl.STATIC_DRAW)
     (.bindBuffer gl gl.ARRAY_BUFFER color-buffer)
     (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. data/f-3d-colors) gl.STATIC_DRAW)
-    (resize-canvas canvas)
-    (.enable gl gl.CULL_FACE)
-    (.enable gl gl.DEPTH_TEST)
-    (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
-    (.clearColor gl 0 0 0 0)
-    (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
-    (.useProgram gl program)
-    (.bindVertexArray gl vao)
-    (.uniformMatrix4fv gl matrix-location false
-      (->> (perspective-matrix-3d {:field-of-view 90
-                                   :aspect (/ gl.canvas.clientWidth
-                                              gl.canvas.clientHeight)
-                                   :near 1
-                                   :far 2000})
-           (multiply-matrices 4 (translation-matrix-3d tx ty -150))
-           (multiply-matrices 4 (x-rotation-matrix-3d (deg->rad 180)))
-           (multiply-matrices 4 (y-rotation-matrix-3d 0))
-           (multiply-matrices 4 (z-rotation-matrix-3d 0))))
-    (.drawArrays gl gl.TRIANGLES 0 (* 16 6))))
-
-(defn perspective-3d-init [canvas]
-  (let [tx 0
-        ty 0
-        *state (atom {:tx tx :ty ty})]
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
               x (- (.-clientX event) (.-left bounds) (/ (.-width bounds) 2))
               y (- (.-height bounds)
                    (- (.-clientY event) (.-top bounds)))]
-          (perspective-3d-render canvas (swap! *state assoc :tx x :ty y)))))
-    (perspective-3d-render canvas @*state)))
+          (perspective-3d-render canvas props (swap! *state assoc :tx x :ty y)))))
+    (perspective-3d-render canvas props @*state)))
 
 (defexample iglu.core/perspective-3d
   {:with-card card}
