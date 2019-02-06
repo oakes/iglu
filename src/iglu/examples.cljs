@@ -48,16 +48,55 @@
       gl.STATIC_DRAW)))
 
 (defn multiply-matrices [size m1 m2]
-  (let [m1 (clj->js (partition size m1))
-        m2 (clj->js (partition size m2))
+  (let [m1 (mapv vec (partition size m1))
+        m2 (mapv vec (partition size m2))
         result (for [i (range size)
                      j (range size)]
                  (reduce
                    (fn [sum k]
-                     (+ sum (* (aget m1 i k) (aget m2 k j))))
+                     (+ sum (* (get-in m1 [i k])
+                               (get-in m2 [k j]))))
                    0
                    (range size)))]
     (clj->js result)))
+
+(defn inverse-matrix [size m]
+  (let [mc (mapv vec (partition size m))
+        mi (mapv vec (for [i (range size)]
+                       (for [j (range size)]
+                         (if (= i j) 1 0))))
+        mc (clj->js mc)
+        mi (clj->js mi)]
+    (dotimes [i size]
+      (when (= 0 (aget mc i i))
+        (loop [r (range (+ i 1) size)]
+          (when-let [ii (first r)]
+            (if (not= 0 (aget mc ii i))
+              (dotimes [j size]
+                (let [e (aget mc i j)]
+                  (aset mc i j (aget mc ii j))
+                  (aset mc ii j e))
+                (let [e (aget mi i j)]
+                  (aset mi i j (aget mi ii j))
+                  (aset mi ii j e)))
+              (recur (rest r))))))
+      (let [e (aget mc i i)]
+        (when (= 0 e)
+          (throw (js/Error. "Not invertable")))
+        (dotimes [j size]
+          (aset mc i j (/ (aget mc i j) e))
+          (aset mi i j (/ (aget mi i j) e))))
+      (dotimes [ii size]
+        (when (not= i ii)
+          (let [e (aget mc ii i)]
+            (dotimes [j size]
+              (aset mc ii j
+                (- (aget mc ii j)
+                   (* e (aget mc i j))))
+              (aset mi ii j
+                (- (aget mi ii j)
+                   (* e (aget mi i j)))))))))
+    (->> mi seq (map seq) flatten clj->js)))
 
 (defn create-buffer
   ([gl program attrib-name]
