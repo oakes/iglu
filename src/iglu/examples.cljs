@@ -813,8 +813,8 @@
                                                              gl.canvas.clientHeight)
                                                   :near 1
                                                   :far 2000})
-        camera-matrix (->> (translation-matrix-3d 0 0 (* radius 1.5))
-                           (multiply-matrices 4 (y-rotation-matrix-3d r)))
+        camera-matrix (->> (y-rotation-matrix-3d r)
+                           (multiply-matrices 4 (translation-matrix-3d 0 0 (* radius 1.5))))
         view-matrix (inverse-matrix 4 camera-matrix)
         view-projection-matrix (multiply-matrices 4 view-matrix projection-matrix)]
     (dotimes [i num-fs]
@@ -864,11 +864,9 @@
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
-              rx (/ (- (.-clientX event) (.-left bounds) (/ (.-width bounds) 2))
-                    (.-width bounds))
-              ry (/ (- (.-clientY event) (.-top bounds) (/ (.-height bounds) 2))
-                    (.-height bounds))]
-          (perspective-camera-3d-render canvas props (swap! *state assoc :r (Math/atan2 rx ry))))))
+              r (/ (- (.-clientX event) (.-left bounds) (/ (.-width bounds) 2))
+                   (.-width bounds))]
+          (perspective-camera-3d-render canvas props (swap! *state assoc :r (-> r (* 360) deg->rad))))))
     (perspective-camera-3d-render canvas props @*state)))
 
 (defexample iglu.core/perspective-camera-3d
