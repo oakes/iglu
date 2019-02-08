@@ -874,3 +874,128 @@
   (->> (iglu.examples/create-canvas card)
        (iglu.examples/perspective-camera-3d-init)))
 
+;; perspective-camera-target-3d
+
+(defn cross [a b]
+  (array
+    (- (* (aget a 1) (aget b 2))
+       (* (aget a 2) (aget b 1)))
+    (- (* (aget a 2) (aget b 0))
+       (* (aget a 0) (aget b 2)))
+    (- (* (aget a 0) (aget b 1))
+       (* (aget a 1) (aget b 0)))))
+
+(defn subtract-vectors [a b]
+  (array
+    (- (aget a 0) (aget b 0))
+    (- (aget a 1) (aget b 1))
+    (- (aget a 2) (aget b 2))))
+
+(defn normalize [v]
+  (let [length (js/Math.sqrt
+                 (+ (* (aget v 0) (aget v 0))
+                    (* (aget v 1) (aget v 1))
+                    (* (aget v 2) (aget v 2))))]
+    (if (> length 0.00001)
+      (array
+        (/ (aget v 0) length)
+        (/ (aget v 1) length)
+        (/ (aget v 2) length))
+      (array 0 0 0))))
+
+(defn look-at [camera-pos target up]
+  (let [z-axis (normalize (subtract-vectors camera-pos target))
+        x-axis (normalize (cross up z-axis))
+        y-axis (normalize (cross z-axis x-axis))]
+    (array
+      (aget x-axis 0) (aget x-axis 1) (aget x-axis 2) 0
+      (aget y-axis 0) (aget y-axis 1) (aget y-axis 2) 0
+      (aget z-axis 0) (aget z-axis 1) (aget z-axis 2) 0
+      (aget camera-pos 0) (aget camera-pos 1) (aget camera-pos 2) 1)))
+
+(defn perspective-camera-target-3d-render [canvas
+                                           {:keys [gl program vao matrix-location]}
+                                           {:keys [r]}]
+  (resize-canvas canvas)
+  (.enable gl gl.CULL_FACE)
+  (.enable gl gl.DEPTH_TEST)
+  (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
+  (.clearColor gl 0 0 0 0)
+  (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
+  (.useProgram gl program)
+  (.bindVertexArray gl vao)
+  (let [radius 200
+        num-fs 5
+        projection-matrix (perspective-matrix-3d {:field-of-view (deg->rad 60)
+                                                  :aspect (/ gl.canvas.clientWidth
+                                                             gl.canvas.clientHeight)
+                                                  :near 1
+                                                  :far 2000})
+        camera-matrix (->> (y-rotation-matrix-3d r)
+                           (multiply-matrices 4 (translation-matrix-3d 0 50 (* radius 1.5))))
+        camera-pos (array
+                     (aget camera-matrix 12)
+                     (aget camera-matrix 13)
+                     (aget camera-matrix 14))
+        f-pos (array radius 0 0)
+        up (array 0 1 0)
+        camera-matrix (look-at camera-pos f-pos up)
+        view-matrix (inverse-matrix 4 camera-matrix)
+        view-projection-matrix (multiply-matrices 4 view-matrix projection-matrix)]
+    (dotimes [i num-fs]
+      (let [angle (/ (* i js/Math.PI 2) num-fs)
+            x (* (js/Math.cos angle) radius)
+            z (* (js/Math.sin angle) radius)
+            matrix (multiply-matrices 4 (translation-matrix-3d x 0 z) view-projection-matrix)]
+        (.uniformMatrix4fv gl matrix-location false matrix)
+        (.drawArrays gl gl.TRIANGLES 0 (* 16 6))))))
+
+(defn perspective-camera-target-3d-init [canvas]
+  (let [gl (.getContext canvas "webgl2")
+        program (create-program gl
+                  data/three-d-vertex-shader-source
+                  data/three-d-fragment-shader-source)
+        vao (let [vao (.createVertexArray gl)]
+              (.bindVertexArray gl vao)
+              vao)
+        pos-buffer (create-buffer gl program "a_position" {:size 3})
+        color-buffer (create-buffer gl program "a_color" {:size 3
+                                                          :type gl.UNSIGNED_BYTE
+                                                          :normalize true})
+        matrix-location (.getUniformLocation gl program "u_matrix")
+        props {:gl gl
+               :program program
+               :vao vao
+               :matrix-location matrix-location}
+        *state (atom {:r 0})
+        positions (js/Float32Array. data/f-3d)
+        matrix (multiply-matrices 4
+                 (translation-matrix-3d -50 -75 -15)
+                 (x-rotation-matrix-3d js/Math.PI))]
+    (doseq [i (range 0 (.-length positions) 3)]
+      (let [v (transform-vector matrix
+                (array
+                  (aget positions (+ i 0))
+                  (aget positions (+ i 1))
+                  (aget positions (+ i 2))
+                  1))]
+        (aset positions (+ i 0) (aget v 0))
+        (aset positions (+ i 1) (aget v 1))
+        (aset positions (+ i 2) (aget v 2))))
+    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
+    (.bufferData gl gl.ARRAY_BUFFER positions gl.STATIC_DRAW)
+    (.bindBuffer gl gl.ARRAY_BUFFER color-buffer)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. data/f-3d-colors) gl.STATIC_DRAW)
+    (events/listen js/window "mousemove"
+      (fn [event]
+        (let [bounds (.getBoundingClientRect canvas)
+              r (/ (- (.-clientX event) (.-left bounds) (/ (.-width bounds) 2))
+                   (.-width bounds))]
+          (perspective-camera-target-3d-render canvas props (swap! *state assoc :r (-> r (* 360) deg->rad))))))
+    (perspective-camera-target-3d-render canvas props @*state)))
+
+(defexample iglu.core/perspective-camera-target-3d
+  {:with-card card}
+  (->> (iglu.examples/create-canvas card)
+       (iglu.examples/perspective-camera-target-3d-init)))
+
