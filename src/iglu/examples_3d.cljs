@@ -38,20 +38,15 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (ex/create-buffer gl program "a_position" {:size 3})
-        color-buffer (ex/create-buffer gl program "a_color" {:size 3
-                                                             :type gl.UNSIGNED_BYTE
-                                                             :normalize true})
         matrix-location (.getUniformLocation gl program "u_matrix")
         props {:gl gl
                :program program
                :vao vao
                :matrix-location matrix-location}
         *state (atom {:x 0 :y 0})]
-    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-3d) gl.STATIC_DRAW)
-    (.bindBuffer gl gl.ARRAY_BUFFER color-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. data/f-3d-colors) gl.STATIC_DRAW)
+    (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-3d) {:size 3})
+    (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
+      {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -101,10 +96,6 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (ex/create-buffer gl program "a_position" {:size 3})
-        color-buffer (ex/create-buffer gl program "a_color" {:size 3
-                                                             :type gl.UNSIGNED_BYTE
-                                                             :normalize true})
         matrix-location (.getUniformLocation gl program "u_matrix")
         props {:gl gl
                :program program
@@ -113,10 +104,9 @@
         tx 100
         ty 100
         *state (atom {:tx tx :ty ty :r 0})]
-    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-3d) gl.STATIC_DRAW)
-    (.bindBuffer gl gl.ARRAY_BUFFER color-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. data/f-3d-colors) gl.STATIC_DRAW)
+    (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-3d) {:size 3})
+    (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
+      {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -167,10 +157,6 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (ex/create-buffer gl program "a_position" {:size 3})
-        color-buffer (ex/create-buffer gl program "a_color" {:size 3
-                                                             :type gl.UNSIGNED_BYTE
-                                                             :normalize true})
         matrix-location (.getUniformLocation gl program "u_matrix")
         props {:gl gl
                :program program
@@ -179,10 +165,9 @@
         tx 100
         ty 100
         *state (atom {:tx tx :ty ty :sx 1 :sy 1})]
-    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-3d) gl.STATIC_DRAW)
-    (.bindBuffer gl gl.ARRAY_BUFFER color-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. data/f-3d-colors) gl.STATIC_DRAW)
+    (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-3d) {:size 3})
+    (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
+      {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -231,20 +216,15 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (ex/create-buffer gl program "a_position" {:size 3})
-        color-buffer (ex/create-buffer gl program "a_color" {:size 3
-                                                             :type gl.UNSIGNED_BYTE
-                                                             :normalize true})
         matrix-location (.getUniformLocation gl program "u_matrix")
         props {:gl gl
                :program program
                :vao vao
                :matrix-location matrix-location}
         *state (atom {:tx 0 :ty 0})]
-    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-3d) gl.STATIC_DRAW)
-    (.bindBuffer gl gl.ARRAY_BUFFER color-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. data/f-3d-colors) gl.STATIC_DRAW)
+    (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-3d) {:size 3})
+    (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
+      {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -299,10 +279,6 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (ex/create-buffer gl program "a_position" {:size 3})
-        color-buffer (ex/create-buffer gl program "a_color" {:size 3
-                                                             :type gl.UNSIGNED_BYTE
-                                                             :normalize true})
         matrix-location (.getUniformLocation gl program "u_matrix")
         props {:gl gl
                :program program
@@ -323,10 +299,9 @@
         (aset positions (+ i 0) (aget v 0))
         (aset positions (+ i 1) (aget v 1))
         (aset positions (+ i 2) (aget v 2))))
-    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER positions gl.STATIC_DRAW)
-    (.bindBuffer gl gl.ARRAY_BUFFER color-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. data/f-3d-colors) gl.STATIC_DRAW)
+    (ex/create-buffer gl program "a_position" positions {:size 3})
+    (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
+      {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -387,10 +362,6 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (ex/create-buffer gl program "a_position" {:size 3})
-        color-buffer (ex/create-buffer gl program "a_color" {:size 3
-                                                             :type gl.UNSIGNED_BYTE
-                                                             :normalize true})
         matrix-location (.getUniformLocation gl program "u_matrix")
         props {:gl gl
                :program program
@@ -411,10 +382,9 @@
         (aset positions (+ i 0) (aget v 0))
         (aset positions (+ i 1) (aget v 1))
         (aset positions (+ i 2) (aget v 2))))
-    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER positions gl.STATIC_DRAW)
-    (.bindBuffer gl gl.ARRAY_BUFFER color-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. data/f-3d-colors) gl.STATIC_DRAW)
+    (ex/create-buffer gl program "a_position" positions {:size 3})
+    (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
+      {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -465,10 +435,6 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (ex/create-buffer gl program "a_position" {:size 3})
-        color-buffer (ex/create-buffer gl program "a_color" {:size 3
-                                                             :type gl.UNSIGNED_BYTE
-                                                             :normalize true})
         matrix-location (.getUniformLocation gl program "u_matrix")
         props {:gl gl
                :program program
@@ -479,10 +445,9 @@
                :rz (ex/deg->rad 320)
                :then 0
                :now 0}]
-    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-3d) gl.STATIC_DRAW)
-    (.bindBuffer gl gl.ARRAY_BUFFER color-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. data/f-3d-colors) gl.STATIC_DRAW)
+    (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-3d) {:size 3})
+    (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
+      {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
     (perspective-animation-3d-render canvas props state)))
 
 (defexample iglu.core/perspective-animation-3d

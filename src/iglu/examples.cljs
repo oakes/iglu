@@ -90,9 +90,9 @@
     (->> mi seq (map seq) flatten clj->js)))
 
 (defn create-buffer
-  ([gl program attrib-name]
-   (create-buffer gl program attrib-name {}))
-  ([gl program attrib-name
+  ([gl program attrib-name src-data]
+   (create-buffer gl program attrib-name src-data {}))
+  ([gl program attrib-name src-data
     {:keys [size type normalize stride offset]
      :or {size 2
           type gl.FLOAT
@@ -104,6 +104,8 @@
      (.bindBuffer gl gl.ARRAY_BUFFER buffer)
      (.enableVertexAttribArray gl attrib-location)
      (.vertexAttribPointer gl attrib-location size type normalize stride offset)
+     (.bindBuffer gl gl.ARRAY_BUFFER buffer)
+     (.bufferData gl gl.ARRAY_BUFFER src-data gl.STATIC_DRAW)
      buffer)))
 
 (defn deg->rad [d]

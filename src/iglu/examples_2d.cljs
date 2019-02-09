@@ -14,11 +14,9 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (ex/create-buffer gl program "a_position")
         matrix-location (.getUniformLocation gl program "u_matrix")
         color-location (.getUniformLocation gl program "u_color")]
-    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/rect) gl.STATIC_DRAW)
+    (ex/create-buffer gl program "a_position" (js/Float32Array. data/rect))
     (ex/resize-canvas canvas)
     (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
     (.clearColor gl 0 0 0 0)
@@ -48,7 +46,6 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (ex/create-buffer gl program "a_position")
         tex-coord-buffer (let [tex-coord-attrib-location (.getAttribLocation gl program "a_texCoord")
                                tex-coord-buffer (.createBuffer gl)
                                _ (.bindBuffer gl gl.ARRAY_BUFFER tex-coord-buffer)
@@ -65,8 +62,7 @@
         matrix-location (.getUniformLocation gl program "u_matrix")
         image-location (.getUniformLocation gl program "u_image")
         texture-unit 0]
-    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/rect) gl.STATIC_DRAW)
+    (ex/create-buffer gl program "a_position" (js/Float32Array. data/rect))
     (let [texture (.createTexture gl)]
       (.activeTexture gl (+ gl.TEXTURE0 texture-unit))
       (.bindTexture gl gl.TEXTURE_2D texture)
@@ -84,9 +80,9 @@
     (.bindVertexArray gl vao)
     (.uniform1i gl image-location texture-unit)
     (.uniformMatrix3fv gl matrix-location false
-        (->> (ex/projection-matrix gl.canvas.clientWidth gl.canvas.clientHeight)
-             (ex/multiply-matrices 3 (ex/translation-matrix 0 0))
-             (ex/multiply-matrices 3 (ex/scaling-matrix image.width image.height))))
+      (->> (ex/projection-matrix gl.canvas.clientWidth gl.canvas.clientHeight)
+           (ex/multiply-matrices 3 (ex/translation-matrix 0 0))
+           (ex/multiply-matrices 3 (ex/scaling-matrix image.width image.height))))
     (.drawArrays gl gl.TRIANGLES 0 6)))
 
 (defn image-init [canvas]
@@ -126,7 +122,6 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (ex/create-buffer gl program "a_position")
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")
         props {:gl gl
@@ -135,8 +130,7 @@
                :color-location color-location
                :matrix-location matrix-location}
         *state (atom {:x 0 :y 0})]
-    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-2d) gl.STATIC_DRAW)
+    (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-2d))
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -178,7 +172,6 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (ex/create-buffer gl program "a_position")
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")
         props {:gl gl
@@ -189,8 +182,7 @@
         tx 100
         ty 100
         *state (atom {:tx tx :ty ty :r 0})]
-    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-2d) gl.STATIC_DRAW)
+    (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-2d))
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -233,7 +225,6 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (ex/create-buffer gl program "a_position")
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")
         props {:gl gl
@@ -244,8 +235,7 @@
         tx 100
         ty 100
         *state (atom {:tx tx :ty ty :sx 1 :sy 1})]
-    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-2d) gl.STATIC_DRAW)
+    (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-2d))
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -291,7 +281,6 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        pos-buffer (ex/create-buffer gl program "a_position")
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")
         props {:gl gl
@@ -302,8 +291,7 @@
         tx 100
         ty 100
         *state (atom {:tx tx :ty ty :r 0})]
-    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-2d) gl.STATIC_DRAW)
+    (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-2d))
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
