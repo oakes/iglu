@@ -38,6 +38,25 @@
         (js/console.log (.getProgramInfoLog gl program))
         (.deleteProgram gl program)))))
 
+(defn create-buffer
+  ([gl program attrib-name src-data]
+   (create-buffer gl program attrib-name src-data {}))
+  ([gl program attrib-name src-data
+    {:keys [size type normalize stride offset]
+     :or {size 2
+          type gl.FLOAT
+          normalize false
+          stride 0
+          offset 0}}]
+   (let [attrib-location (.getAttribLocation gl program attrib-name)
+         buffer (.createBuffer gl)]
+     (.bindBuffer gl gl.ARRAY_BUFFER buffer)
+     (.enableVertexAttribArray gl attrib-location)
+     (.vertexAttribPointer gl attrib-location size type normalize stride offset)
+     (.bindBuffer gl gl.ARRAY_BUFFER buffer)
+     (.bufferData gl gl.ARRAY_BUFFER src-data gl.STATIC_DRAW)
+     (/ (.-length src-data) size))))
+
 (defn multiply-matrices [size m1 m2]
   (let [m1 (mapv vec (partition size m1))
         m2 (mapv vec (partition size m2))
@@ -88,25 +107,6 @@
                 (- (aget mi ii j)
                    (* e (aget mi i j)))))))))
     (->> mi seq (map seq) flatten clj->js)))
-
-(defn create-buffer
-  ([gl program attrib-name src-data]
-   (create-buffer gl program attrib-name src-data {}))
-  ([gl program attrib-name src-data
-    {:keys [size type normalize stride offset]
-     :or {size 2
-          type gl.FLOAT
-          normalize false
-          stride 0
-          offset 0}}]
-   (let [attrib-location (.getAttribLocation gl program attrib-name)
-         buffer (.createBuffer gl)]
-     (.bindBuffer gl gl.ARRAY_BUFFER buffer)
-     (.enableVertexAttribArray gl attrib-location)
-     (.vertexAttribPointer gl attrib-location size type normalize stride offset)
-     (.bindBuffer gl gl.ARRAY_BUFFER buffer)
-     (.bufferData gl gl.ARRAY_BUFFER src-data gl.STATIC_DRAW)
-     (/ (.-length src-data) size))))
 
 (defn deg->rad [d]
   (-> d (* js/Math.PI) (/ 180)))
