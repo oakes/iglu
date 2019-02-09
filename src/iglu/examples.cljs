@@ -106,7 +106,7 @@
      (.vertexAttribPointer gl attrib-location size type normalize stride offset)
      (.bindBuffer gl gl.ARRAY_BUFFER buffer)
      (.bufferData gl gl.ARRAY_BUFFER src-data gl.STATIC_DRAW)
-     buffer)))
+     (/ (.-length src-data) size))))
 
 (defn deg->rad [d]
   (-> d (* js/Math.PI) (/ 180)))

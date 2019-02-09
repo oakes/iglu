@@ -15,8 +15,8 @@
               (.bindVertexArray gl vao)
               vao)
         matrix-location (.getUniformLocation gl program "u_matrix")
-        color-location (.getUniformLocation gl program "u_color")]
-    (ex/create-buffer gl program "a_position" (js/Float32Array. data/rect))
+        color-location (.getUniformLocation gl program "u_color")
+        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/rect))]
     (ex/resize-canvas canvas)
     (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
     (.clearColor gl 0 0 0 0)
@@ -29,7 +29,7 @@
         (->> (ex/projection-matrix gl.canvas.clientWidth gl.canvas.clientHeight)
              (ex/multiply-matrices 3 (ex/translation-matrix (rand-int 300) (rand-int 300)))
              (ex/multiply-matrices 3 (ex/scaling-matrix (rand-int 300) (rand-int 300)))))
-      (.drawArrays gl gl.TRIANGLES 0 6))))
+      (.drawArrays gl gl.TRIANGLES 0 cnt))))
 
 (defexample iglu.core/rand-rects
   {:with-card card}
@@ -48,8 +48,8 @@
               vao)
         matrix-location (.getUniformLocation gl program "u_matrix")
         image-location (.getUniformLocation gl program "u_image")
-        texture-unit 0]
-    (ex/create-buffer gl program "a_position" (js/Float32Array. data/rect))
+        texture-unit 0
+        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/rect))]
     (let [texture (.createTexture gl)]
       (.activeTexture gl (+ gl.TEXTURE0 texture-unit))
       (.bindTexture gl gl.TEXTURE_2D texture)
@@ -70,7 +70,7 @@
       (->> (ex/projection-matrix gl.canvas.clientWidth gl.canvas.clientHeight)
            (ex/multiply-matrices 3 (ex/translation-matrix 0 0))
            (ex/multiply-matrices 3 (ex/scaling-matrix image.width image.height))))
-    (.drawArrays gl gl.TRIANGLES 0 6)))
+    (.drawArrays gl gl.TRIANGLES 0 cnt)))
 
 (defn image-init [canvas]
   (let [image (js/Image.)]
@@ -87,7 +87,7 @@
 ;; translation
 
 (defn translation-render [canvas
-                          {:keys [gl program vao matrix-location color-location]}
+                          {:keys [gl program vao matrix-location color-location cnt]}
                           {:keys [x y]}]
   (ex/resize-canvas canvas)
   (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
@@ -99,7 +99,7 @@
   (.uniformMatrix3fv gl matrix-location false
     (->> (ex/projection-matrix gl.canvas.clientWidth gl.canvas.clientHeight)
          (ex/multiply-matrices 3 (ex/translation-matrix x y))))
-  (.drawArrays gl gl.TRIANGLES 0 18))
+  (.drawArrays gl gl.TRIANGLES 0 cnt))
 
 (defn translation-init [canvas]
   (let [gl (.getContext canvas "webgl2")
@@ -111,13 +111,14 @@
               vao)
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")
+        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-2d))
         props {:gl gl
                :program program
                :vao vao
                :color-location color-location
-               :matrix-location matrix-location}
+               :matrix-location matrix-location
+               :cnt cnt}
         *state (atom {:x 0 :y 0})]
-    (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-2d))
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -134,7 +135,7 @@
 ;; rotation
 
 (defn rotation-render [canvas
-                       {:keys [gl program vao matrix-location color-location]}
+                       {:keys [gl program vao matrix-location color-location cnt]}
                        {:keys [tx ty r]}]
   (ex/resize-canvas canvas)
   (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
@@ -149,7 +150,7 @@
          (ex/multiply-matrices 3 (ex/rotation-matrix r))
          ;; make it rotate around its center
          (ex/multiply-matrices 3 (ex/translation-matrix -50 -75))))
-  (.drawArrays gl gl.TRIANGLES 0 18))
+  (.drawArrays gl gl.TRIANGLES 0 cnt))
 
 (defn rotation-init [canvas]
   (let [gl (.getContext canvas "webgl2")
@@ -161,15 +162,16 @@
               vao)
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")
+        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-2d))
         props {:gl gl
                :program program
                :vao vao
                :color-location color-location
-               :matrix-location matrix-location}
+               :matrix-location matrix-location
+               :cnt cnt}
         tx 100
         ty 100
         *state (atom {:tx tx :ty ty :r 0})]
-    (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-2d))
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -188,7 +190,7 @@
 ;; scale
 
 (defn scale-render [canvas
-                    {:keys [gl program vao matrix-location color-location]}
+                    {:keys [gl program vao matrix-location color-location cnt]}
                     {:keys [tx ty sx sy]}]
   (ex/resize-canvas canvas)
   (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
@@ -202,7 +204,7 @@
          (ex/multiply-matrices 3 (ex/translation-matrix tx ty))
          (ex/multiply-matrices 3 (ex/rotation-matrix 0))
          (ex/multiply-matrices 3 (ex/scaling-matrix sx sy))))
-  (.drawArrays gl gl.TRIANGLES 0 18))
+  (.drawArrays gl gl.TRIANGLES 0 cnt))
 
 (defn scale-init [canvas]
   (let [gl (.getContext canvas "webgl2")
@@ -214,15 +216,16 @@
               vao)
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")
+        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-2d))
         props {:gl gl
                :program program
                :vao vao
                :color-location color-location
-               :matrix-location matrix-location}
+               :matrix-location matrix-location
+               :cnt cnt}
         tx 100
         ty 100
         *state (atom {:tx tx :ty ty :sx 1 :sy 1})]
-    (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-2d))
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -241,7 +244,7 @@
 ;; rotation-multi
 
 (defn rotation-multi-render [canvas
-                             {:keys [gl program vao matrix-location color-location]}
+                             {:keys [gl program vao matrix-location color-location cnt]}
                              {:keys [tx ty r]}]
   (ex/resize-canvas canvas)
   (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
@@ -257,7 +260,7 @@
                         (ex/multiply-matrices 3 (ex/translation-matrix tx ty))
                         (ex/multiply-matrices 3 (ex/rotation-matrix r)))]
         (.uniformMatrix3fv gl matrix-location false matrix)
-        (.drawArrays gl gl.TRIANGLES 0 18)
+        (.drawArrays gl gl.TRIANGLES 0 cnt)
         (recur (inc i) matrix)))))
 
 (defn rotation-multi-init [canvas]
@@ -270,15 +273,16 @@
               vao)
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")
+        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-2d))
         props {:gl gl
                :program program
                :vao vao
                :color-location color-location
-               :matrix-location matrix-location}
+               :matrix-location matrix-location
+               :cnt cnt}
         tx 100
         ty 100
         *state (atom {:tx tx :ty ty :r 0})]
-    (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-2d))
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)

@@ -7,7 +7,7 @@
 ;; translation-3d
 
 (defn translation-3d-render [canvas
-                             {:keys [gl program vao matrix-location]}
+                             {:keys [gl program vao matrix-location cnt]}
                              {:keys [x y]}]
   (ex/resize-canvas canvas)
   (.enable gl gl.CULL_FACE)
@@ -28,7 +28,7 @@
          (ex/multiply-matrices 4 (ex/x-rotation-matrix-3d (ex/deg->rad 40)))
          (ex/multiply-matrices 4 (ex/y-rotation-matrix-3d (ex/deg->rad 25)))
          (ex/multiply-matrices 4 (ex/z-rotation-matrix-3d (ex/deg->rad 325)))))
-  (.drawArrays gl gl.TRIANGLES 0 (* 16 6)))
+  (.drawArrays gl gl.TRIANGLES 0 cnt))
 
 (defn translation-3d-init [canvas]
   (let [gl (.getContext canvas "webgl2")
@@ -39,14 +39,15 @@
               (.bindVertexArray gl vao)
               vao)
         matrix-location (.getUniformLocation gl program "u_matrix")
+        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-3d) {:size 3})
+        _ (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
+            {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
         props {:gl gl
                :program program
                :vao vao
-               :matrix-location matrix-location}
+               :matrix-location matrix-location
+               :cnt cnt}
         *state (atom {:x 0 :y 0})]
-    (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-3d) {:size 3})
-    (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
-      {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -63,7 +64,7 @@
 ;; rotation-3d
 
 (defn rotation-3d-render [canvas
-                          {:keys [gl program vao matrix-location]}
+                          {:keys [gl program vao matrix-location cnt]}
                           {:keys [tx ty r]}]
   (ex/resize-canvas canvas)
   (.enable gl gl.CULL_FACE)
@@ -86,7 +87,7 @@
          (ex/multiply-matrices 4 (ex/z-rotation-matrix-3d r))
          ;; make it rotate around its center
          (ex/multiply-matrices 4 (ex/translation-matrix-3d -50 -75 0))))
-  (.drawArrays gl gl.TRIANGLES 0 (* 16 6)))
+  (.drawArrays gl gl.TRIANGLES 0 cnt))
 
 (defn rotation-3d-init [canvas]
   (let [gl (.getContext canvas "webgl2")
@@ -97,16 +98,17 @@
               (.bindVertexArray gl vao)
               vao)
         matrix-location (.getUniformLocation gl program "u_matrix")
+        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-3d) {:size 3})
+        _ (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
+            {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
         props {:gl gl
                :program program
                :vao vao
-               :matrix-location matrix-location}
+               :matrix-location matrix-location
+               :cnt cnt}
         tx 100
         ty 100
         *state (atom {:tx tx :ty ty :r 0})]
-    (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-3d) {:size 3})
-    (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
-      {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -125,7 +127,7 @@
 ;; scale-3d
 
 (defn scale-3d-render [canvas
-                       {:keys [gl program vao matrix-location]}
+                       {:keys [gl program vao matrix-location cnt]}
                        {:keys [tx ty sx sy]}]
   (ex/resize-canvas canvas)
   (.enable gl gl.CULL_FACE)
@@ -147,7 +149,7 @@
          (ex/multiply-matrices 4 (ex/y-rotation-matrix-3d (ex/deg->rad 25)))
          (ex/multiply-matrices 4 (ex/z-rotation-matrix-3d (ex/deg->rad 325)))
          (ex/multiply-matrices 4 (ex/scaling-matrix-3d sx sy 1))))
-  (.drawArrays gl gl.TRIANGLES 0 (* 16 6)))
+  (.drawArrays gl gl.TRIANGLES 0 cnt))
 
 (defn scale-3d-init [canvas]
   (let [gl (.getContext canvas "webgl2")
@@ -158,16 +160,17 @@
               (.bindVertexArray gl vao)
               vao)
         matrix-location (.getUniformLocation gl program "u_matrix")
+        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-3d) {:size 3})
+        _ (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
+            {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
         props {:gl gl
                :program program
                :vao vao
-               :matrix-location matrix-location}
+               :matrix-location matrix-location
+               :cnt cnt}
         tx 100
         ty 100
         *state (atom {:tx tx :ty ty :sx 1 :sy 1})]
-    (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-3d) {:size 3})
-    (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
-      {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -186,7 +189,7 @@
 ;; perspective-3d
 
 (defn perspective-3d-render [canvas
-                             {:keys [gl program vao matrix-location]}
+                             {:keys [gl program vao matrix-location cnt]}
                              {:keys [tx ty]}]
   (ex/resize-canvas canvas)
   (.enable gl gl.CULL_FACE)
@@ -206,7 +209,7 @@
          (ex/multiply-matrices 4 (ex/x-rotation-matrix-3d (ex/deg->rad 180)))
          (ex/multiply-matrices 4 (ex/y-rotation-matrix-3d 0))
          (ex/multiply-matrices 4 (ex/z-rotation-matrix-3d 0))))
-  (.drawArrays gl gl.TRIANGLES 0 (* 16 6)))
+  (.drawArrays gl gl.TRIANGLES 0 cnt))
 
 (defn perspective-3d-init [canvas]
   (let [gl (.getContext canvas "webgl2")
@@ -217,14 +220,15 @@
               (.bindVertexArray gl vao)
               vao)
         matrix-location (.getUniformLocation gl program "u_matrix")
+        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-3d) {:size 3})
+        _ (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
+            {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
         props {:gl gl
                :program program
                :vao vao
-               :matrix-location matrix-location}
+               :matrix-location matrix-location
+               :cnt cnt}
         *state (atom {:tx 0 :ty 0})]
-    (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-3d) {:size 3})
-    (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
-      {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -242,7 +246,7 @@
 ;; perspective-camera-3d
 
 (defn perspective-camera-3d-render [canvas
-                                    {:keys [gl program vao matrix-location]}
+                                    {:keys [gl program vao matrix-location cnt]}
                                     {:keys [r]}]
   (ex/resize-canvas canvas)
   (.enable gl gl.CULL_FACE)
@@ -269,7 +273,7 @@
             z (* (js/Math.sin angle) radius)
             matrix (ex/multiply-matrices 4 (ex/translation-matrix-3d x 0 z) view-projection-matrix)]
         (.uniformMatrix4fv gl matrix-location false matrix)
-        (.drawArrays gl gl.TRIANGLES 0 (* 16 6))))))
+        (.drawArrays gl gl.TRIANGLES 0 cnt)))))
 
 (defn perspective-camera-3d-init [canvas]
   (let [gl (.getContext canvas "webgl2")
@@ -280,28 +284,29 @@
               (.bindVertexArray gl vao)
               vao)
         matrix-location (.getUniformLocation gl program "u_matrix")
-        props {:gl gl
-               :program program
-               :vao vao
-               :matrix-location matrix-location}
-        *state (atom {:r 0})
         positions (js/Float32Array. data/f-3d)
         matrix (ex/multiply-matrices 4
                  (ex/translation-matrix-3d -50 -75 -15)
-                 (ex/x-rotation-matrix-3d js/Math.PI))]
-    (doseq [i (range 0 (.-length positions) 3)]
-      (let [v (ex/transform-vector matrix
-                (array
-                  (aget positions (+ i 0))
-                  (aget positions (+ i 1))
-                  (aget positions (+ i 2))
-                  1))]
-        (aset positions (+ i 0) (aget v 0))
-        (aset positions (+ i 1) (aget v 1))
-        (aset positions (+ i 2) (aget v 2))))
-    (ex/create-buffer gl program "a_position" positions {:size 3})
-    (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
-      {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
+                 (ex/x-rotation-matrix-3d js/Math.PI))
+        _ (doseq [i (range 0 (.-length positions) 3)]
+            (let [v (ex/transform-vector matrix
+                      (array
+                        (aget positions (+ i 0))
+                        (aget positions (+ i 1))
+                        (aget positions (+ i 2))
+                        1))]
+              (aset positions (+ i 0) (aget v 0))
+              (aset positions (+ i 1) (aget v 1))
+              (aset positions (+ i 2) (aget v 2))))
+        cnt (ex/create-buffer gl program "a_position" positions {:size 3})
+        _ (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
+            {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
+        props {:gl gl
+               :program program
+               :vao vao
+               :matrix-location matrix-location
+               :cnt cnt}
+        *state (atom {:r 0})]
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -318,7 +323,7 @@
 ;; perspective-camera-target-3d-render
 
 (defn perspective-camera-target-3d-render [canvas
-                                           {:keys [gl program vao matrix-location]}
+                                           {:keys [gl program vao matrix-location cnt]}
                                            {:keys [r]}]
   (ex/resize-canvas canvas)
   (.enable gl gl.CULL_FACE)
@@ -352,7 +357,7 @@
             z (* (js/Math.sin angle) radius)
             matrix (ex/multiply-matrices 4 (ex/translation-matrix-3d x 0 z) view-projection-matrix)]
         (.uniformMatrix4fv gl matrix-location false matrix)
-        (.drawArrays gl gl.TRIANGLES 0 (* 16 6))))))
+        (.drawArrays gl gl.TRIANGLES 0 cnt)))))
 
 (defn perspective-camera-target-3d-init [canvas]
   (let [gl (.getContext canvas "webgl2")
@@ -363,28 +368,29 @@
               (.bindVertexArray gl vao)
               vao)
         matrix-location (.getUniformLocation gl program "u_matrix")
-        props {:gl gl
-               :program program
-               :vao vao
-               :matrix-location matrix-location}
-        *state (atom {:r 0})
         positions (js/Float32Array. data/f-3d)
         matrix (ex/multiply-matrices 4
                  (ex/translation-matrix-3d -50 -75 -15)
-                 (ex/x-rotation-matrix-3d js/Math.PI))]
-    (doseq [i (range 0 (.-length positions) 3)]
-      (let [v (ex/transform-vector matrix
-                (array
-                  (aget positions (+ i 0))
-                  (aget positions (+ i 1))
-                  (aget positions (+ i 2))
-                  1))]
-        (aset positions (+ i 0) (aget v 0))
-        (aset positions (+ i 1) (aget v 1))
-        (aset positions (+ i 2) (aget v 2))))
-    (ex/create-buffer gl program "a_position" positions {:size 3})
-    (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
-      {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
+                 (ex/x-rotation-matrix-3d js/Math.PI))
+        _ (doseq [i (range 0 (.-length positions) 3)]
+            (let [v (ex/transform-vector matrix
+                      (array
+                        (aget positions (+ i 0))
+                        (aget positions (+ i 1))
+                        (aget positions (+ i 2))
+                        1))]
+              (aset positions (+ i 0) (aget v 0))
+              (aset positions (+ i 1) (aget v 1))
+              (aset positions (+ i 2) (aget v 2))))
+        cnt (ex/create-buffer gl program "a_position" positions {:size 3})
+        _ (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
+            {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
+        props {:gl gl
+               :program program
+               :vao vao
+               :matrix-location matrix-location
+               :cnt cnt}
+        *state (atom {:r 0})]
     (events/listen js/window "mousemove"
       (fn [event]
         (let [bounds (.getBoundingClientRect canvas)
@@ -401,7 +407,7 @@
 ;; perspective-animation-3d-render
 
 (defn perspective-animation-3d-render [canvas
-                                       {:keys [gl program vao matrix-location] :as props}
+                                       {:keys [gl program vao matrix-location cnt] :as props}
                                        {:keys [rx ry rz then now] :as state}]
   (ex/resize-canvas canvas)
   (.enable gl gl.CULL_FACE)
@@ -421,7 +427,7 @@
          (ex/multiply-matrices 4 (ex/x-rotation-matrix-3d rx))
          (ex/multiply-matrices 4 (ex/y-rotation-matrix-3d ry))
          (ex/multiply-matrices 4 (ex/z-rotation-matrix-3d rz))))
-  (.drawArrays gl gl.TRIANGLES 0 (* 16 6))
+  (.drawArrays gl gl.TRIANGLES 0 cnt)
   (js/requestAnimationFrame #(perspective-animation-3d-render canvas props
                                (-> state
                                    (update :ry + (* 1.2 (- now then)))
@@ -436,18 +442,19 @@
               (.bindVertexArray gl vao)
               vao)
         matrix-location (.getUniformLocation gl program "u_matrix")
+        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-3d) {:size 3})
+        _ (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
+            {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
         props {:gl gl
                :program program
                :vao vao
-               :matrix-location matrix-location}
+               :matrix-location matrix-location
+               :cnt cnt}
         state {:rx (ex/deg->rad 190)
                :ry (ex/deg->rad 40)
                :rz (ex/deg->rad 320)
                :then 0
                :now 0}]
-    (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-3d) {:size 3})
-    (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
-      {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
     (perspective-animation-3d-render canvas props state)))
 
 (defexample iglu.core/perspective-animation-3d
