@@ -49,7 +49,6 @@
         matrix-location (.getUniformLocation gl program "u_matrix")
         image-location (.getUniformLocation gl program "u_image")
         texture-unit 0]
-    (ex/create-buffer gl program "a_texCoord" (js/Float32Array. data/rect))
     (ex/create-buffer gl program "a_position" (js/Float32Array. data/rect))
     (let [texture (.createTexture gl)]
       (.activeTexture gl (+ gl.TEXTURE0 texture-unit))

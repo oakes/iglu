@@ -5,8 +5,6 @@
   
   in vec2 a_position;
   
-  in vec2 a_texCoord;
-  
   uniform mat3 u_matrix;
   
   out vec2 v_texCoord;
@@ -16,7 +14,7 @@
   
     // pass the texCoord to the fragment shader
     // The GPU will interpolate this value between points
-    v_texCoord = a_texCoord;
+    v_texCoord = a_position;
   }")
 
 (def image-fragment-shader-source
