@@ -38,12 +38,6 @@
         (js/console.log (.getProgramInfoLog gl program))
         (.deleteProgram gl program)))))
 
-(defn set-rectangle [gl x y width height]
-  (let [x1 x, x2 (+ x width), y1 y, y2 (+ y height)]
-    (.bufferData gl gl.ARRAY_BUFFER
-      (js/Float32Array. (array x1 y1, x2 y1, x1 y2, x1 y2, x2 y1, x2 y2))
-      gl.STATIC_DRAW)))
-
 (defn multiply-matrices [size m1 m2]
   (let [m1 (mapv vec (partition size m1))
         m2 (mapv vec (partition size m2))
@@ -106,10 +100,10 @@
           stride 0
           offset 0}}]
    (let [attrib-location (.getAttribLocation gl program attrib-name)
-         buffer (.createBuffer gl)
-         _ (.bindBuffer gl gl.ARRAY_BUFFER buffer)
-         _ (.enableVertexAttribArray gl attrib-location)
-         _ (.vertexAttribPointer gl attrib-location size type normalize stride offset)]
+         buffer (.createBuffer gl)]
+     (.bindBuffer gl gl.ARRAY_BUFFER buffer)
+     (.enableVertexAttribArray gl attrib-location)
+     (.vertexAttribPointer gl attrib-location size type normalize stride offset)
      buffer)))
 
 (defn deg->rad [d]
@@ -153,8 +147,6 @@
     (/ 2 width) 0 0
     0 (/ -2 height) 0
     -1 1 1))
-
-
 
 ;; three-d
 

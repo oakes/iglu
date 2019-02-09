@@ -9,25 +9,28 @@
 (defn rand-rects-init [canvas]
   (let [gl (.getContext canvas "webgl2")
         program (ex/create-program gl
-                  data/rand-rects-vertex-shader-source
-                  data/rand-rects-fragment-shader-source)
+                  data/two-d-vertex-shader-source
+                  data/two-d-fragment-shader-source)
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
         pos-buffer (ex/create-buffer gl program "a_position")
-        resolution-location (.getUniformLocation gl program "u_resolution")
+        matrix-location (.getUniformLocation gl program "u_matrix")
         color-location (.getUniformLocation gl program "u_color")]
+    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/rect) gl.STATIC_DRAW)
     (ex/resize-canvas canvas)
     (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
     (.clearColor gl 0 0 0 0)
     (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
     (.useProgram gl program)
     (.bindVertexArray gl vao)
-    (.uniform2f gl resolution-location gl.canvas.width gl.canvas.height)
     (dotimes [_ 50]
-      (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-      (ex/set-rectangle gl (rand-int 300) (rand-int 300) (rand-int 300) (rand-int 300))
       (.uniform4f gl color-location (rand) (rand) (rand) 1)
+      (.uniformMatrix3fv gl matrix-location false
+        (->> (ex/projection-matrix gl.canvas.clientWidth gl.canvas.clientHeight)
+             (ex/multiply-matrices 3 (ex/translation-matrix (rand-int 300) (rand-int 300)))
+             (ex/multiply-matrices 3 (ex/scaling-matrix (rand-int 300) (rand-int 300)))))
       (.drawArrays gl gl.TRIANGLES 0 6))))
 
 (defexample iglu.core/rand-rects
@@ -59,9 +62,11 @@
                                _ (.vertexAttribPointer gl tex-coord-attrib-location
                                    size type normalize stride offset)]
                            tex-coord-buffer)
-        resolution-location (.getUniformLocation gl program "u_resolution")
+        matrix-location (.getUniformLocation gl program "u_matrix")
         image-location (.getUniformLocation gl program "u_image")
         texture-unit 0]
+    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/rect) gl.STATIC_DRAW)
     (let [texture (.createTexture gl)]
       (.activeTexture gl (+ gl.TEXTURE0 texture-unit))
       (.bindTexture gl gl.TEXTURE_2D texture)
@@ -77,10 +82,11 @@
     (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
     (.useProgram gl program)
     (.bindVertexArray gl vao)
-    (.uniform2f gl resolution-location gl.canvas.width gl.canvas.height)
     (.uniform1i gl image-location texture-unit)
-    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
-    (ex/set-rectangle gl 0 0 image.width image.height)
+    (.uniformMatrix3fv gl matrix-location false
+        (->> (ex/projection-matrix gl.canvas.clientWidth gl.canvas.clientHeight)
+             (ex/multiply-matrices 3 (ex/translation-matrix 0 0))
+             (ex/multiply-matrices 3 (ex/scaling-matrix image.width image.height))))
     (.drawArrays gl gl.TRIANGLES 0 6)))
 
 (defn image-init [canvas]
