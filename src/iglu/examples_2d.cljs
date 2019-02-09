@@ -46,22 +46,10 @@
         vao (let [vao (.createVertexArray gl)]
               (.bindVertexArray gl vao)
               vao)
-        tex-coord-buffer (let [tex-coord-attrib-location (.getAttribLocation gl program "a_texCoord")
-                               tex-coord-buffer (.createBuffer gl)
-                               _ (.bindBuffer gl gl.ARRAY_BUFFER tex-coord-buffer)
-                               _ (.bufferData gl gl.ARRAY_BUFFER
-                                   (js/Float32Array. (array
-                                                       0.0 0.0, 1.0 0.0, 0.0 1.0
-                                                       0.0 1.0, 1.0 0.0, 1.0 1.0))
-                                   gl.STATIC_DRAW)
-                               _ (.enableVertexAttribArray gl tex-coord-attrib-location)
-                               size 2, type gl.FLOAT, normalize false, stride 0, offset 0
-                               _ (.vertexAttribPointer gl tex-coord-attrib-location
-                                   size type normalize stride offset)]
-                           tex-coord-buffer)
         matrix-location (.getUniformLocation gl program "u_matrix")
         image-location (.getUniformLocation gl program "u_image")
         texture-unit 0]
+    (ex/create-buffer gl program "a_texCoord" (js/Float32Array. data/rect))
     (ex/create-buffer gl program "a_position" (js/Float32Array. data/rect))
     (let [texture (.createTexture gl)]
       (.activeTexture gl (+ gl.TEXTURE0 texture-unit))
