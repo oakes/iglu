@@ -1,1 +1,1 @@
-{:require  [iglu.core dynadoc.core]}
+{:require  [iglu.examples-2d iglu.examples-3d dynadoc.core]}
