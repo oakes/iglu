@@ -999,3 +999,65 @@
   (->> (iglu.examples/create-canvas card)
        (iglu.examples/perspective-camera-target-3d-init)))
 
+;; perspective-animation-3d-render
+
+(defn perspective-animation-3d-render [canvas
+                                       {:keys [gl program vao matrix-location] :as props}
+                                       {:keys [rx ry rz then now] :as state}]
+  (resize-canvas canvas)
+  (.enable gl gl.CULL_FACE)
+  (.enable gl gl.DEPTH_TEST)
+  (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
+  (.clearColor gl 0 0 0 0)
+  (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
+  (.useProgram gl program)
+  (.bindVertexArray gl vao)
+  (.uniformMatrix4fv gl matrix-location false
+    (->> (perspective-matrix-3d {:field-of-view (deg->rad 60)
+                                 :aspect (/ gl.canvas.clientWidth
+                                            gl.canvas.clientHeight)
+                                 :near 1
+                                 :far 2000})
+         (multiply-matrices 4 (translation-matrix-3d 0 0 -360))
+         (multiply-matrices 4 (x-rotation-matrix-3d rx))
+         (multiply-matrices 4 (y-rotation-matrix-3d ry))
+         (multiply-matrices 4 (z-rotation-matrix-3d rz))))
+  (.drawArrays gl gl.TRIANGLES 0 (* 16 6))
+  (js/requestAnimationFrame #(perspective-animation-3d-render canvas props
+                               (-> state
+                                   (update :ry + (* 1.2 (- now then)))
+                                   (assoc :then now :now (* % 0.001))))))
+
+(defn perspective-animation-3d-init [canvas]
+  (let [gl (.getContext canvas "webgl2")
+        program (create-program gl
+                  data/three-d-vertex-shader-source
+                  data/three-d-fragment-shader-source)
+        vao (let [vao (.createVertexArray gl)]
+              (.bindVertexArray gl vao)
+              vao)
+        pos-buffer (create-buffer gl program "a_position" {:size 3})
+        color-buffer (create-buffer gl program "a_color" {:size 3
+                                                          :type gl.UNSIGNED_BYTE
+                                                          :normalize true})
+        matrix-location (.getUniformLocation gl program "u_matrix")
+        props {:gl gl
+               :program program
+               :vao vao
+               :matrix-location matrix-location}
+        state {:rx (deg->rad 190)
+               :ry (deg->rad 40)
+               :rz (deg->rad 320)
+               :then 0
+               :now 0}]
+    (.bindBuffer gl gl.ARRAY_BUFFER pos-buffer)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Float32Array. data/f-3d) gl.STATIC_DRAW)
+    (.bindBuffer gl gl.ARRAY_BUFFER color-buffer)
+    (.bufferData gl gl.ARRAY_BUFFER (js/Uint8Array. data/f-3d-colors) gl.STATIC_DRAW)
+    (perspective-animation-3d-render canvas props state)))
+
+(defexample iglu.core/perspective-animation-3d
+  {:with-card card}
+  (->> (iglu.examples/create-canvas card)
+       (iglu.examples/perspective-animation-3d-init)))
+
