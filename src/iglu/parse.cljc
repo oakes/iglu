@@ -10,11 +10,15 @@
 
 (defrecord Output [name type location])
 
+(defrecord Function [name arg-types return-type])
+
 (def ^:dynamic *attributes-used* nil)
 
 (def ^:dynamic *uniforms-used* nil)
 
 (def ^:dynamic *varyings-used* nil)
+
+(def ^:dynamic *functions-used* nil)
 
 (defn attribute? [x]
   (when (instance? Attribute x)
@@ -34,9 +38,22 @@
 (defn output? [x]
   (instance? Output x))
 
+(defn function? [x]
+  (when (instance? Function x)
+    (some-> *functions-used* (swap! conj x))
+    true))
+
 (s/def ::version string?)
 (s/def ::shader-opts (s/keys :opt-un [::version]))
 
+(s/def ::fn-expression (s/cat
+                         :fn (s/or :fn fn? :fn-obj function?)
+                         :args (s/* ::subexpression)))
+(defn fn-expression? [x]
+  (let [res (s/conform ::fn-expression x)]
+    (when-not (= ::s/invalid res)
+      (some-> *functions-used* (swap! conj res)))
+    res))
 (s/def ::expression (s/cat
                       :fn keyword?
                       :args (s/* ::subexpression)))
@@ -45,13 +62,17 @@
                          :attribute attribute?
                          :uniform uniform?
                          :varying varying?
+                         :fn-expression fn-expression?
                          :expression ::expression))
 (s/def ::shader (s/map-of any? ::subexpression))
 
 (s/def ::vertex-out (s/or
                       :output output?
+                      :function function?
                       :varying varying?))
-(s/def ::fragment-out output?)
+(s/def ::fragment-out (s/or
+                        :output output?
+                        :function function?))
 
 (defn throw-error [msg]
   (throw (#?(:clj Exception. :cljs js/Error.) msg)))
@@ -73,10 +94,12 @@
         *attributes (atom #{})
         *uniforms (atom #{})
         *varyings (atom #{})
+        *functions (atom #{})
         opts-res (s/conform ::shader-opts opts)
         outs-res (binding [*attributes-used* *attributes
                            *uniforms-used* *uniforms
-                           *varyings-used* *varyings]
+                           *varyings-used* *varyings
+                           *functions-used* *functions]
                    (s/conform ::shader outs))]
     (case shader-type
       :vertex (some->> @*varyings first
@@ -93,5 +116,6 @@
     (merge opts-res outs-res
       {:attributes @*attributes
        :uniforms @*uniforms
-       :varyings @*varyings})))
+       :varyings @*varyings
+       :functions @*functions})))
 

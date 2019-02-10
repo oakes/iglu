@@ -12,6 +12,8 @@
 (defn output [name & [type location]]
   (parse/->Output name type location))
 
+(def function parse/->Function)
+
 (defn ^:private glsl [content]
   content)
 
