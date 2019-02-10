@@ -1,6 +1,6 @@
 ## Introduction
 
-A ClojureScript library for making WebGL graphics with edn data.
+A Clojure and ClojureScript library for turning data into GLSL shaders for use by OpenGL and WebGL.
 
 ## Licensing
 

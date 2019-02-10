@@ -38,7 +38,7 @@
 (task-options!
   pom {:project 'iglu
        :version "0.0.1-SNAPSHOT"
-       :description "A ClojureScript data -> webgl library"
+       :description "A Clojure data -> GLSL library"
        :url "https://github.com/oakes/iglu"
        :license {"Public Domain" "http://unlicense.org/UNLICENSE"}}
   push {:repo "clojars"})
