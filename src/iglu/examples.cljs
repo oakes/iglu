@@ -3,15 +3,16 @@
   (:require-macros [dynadoc.example :refer [defexample]]))
 
 (defexample iglu.core/iglu->glsl
-  (let [position (attribute 'position 'vec4)
-        color (attribute 'color 'vec4)
-        matrix (uniform 'matrix 'mat4)
-        out-position (output 'gl_Position)
-        out-color (output 'outColor 'vec4)]
-    (iglu->glsl [{:version "300 es"
-                  out-position [:* position matrix]}
-                 {:version "300 es"
-                  out-color color}])))
+  (let [a-position (attribute 'a_position 'vec4)
+        a-color (attribute 'a_color 'vec4)
+        u-matrix (uniform 'u_matrix 'mat4)
+        v-color (varying 'v_color 'vec4)]
+    (iglu->glsl
+      {:version "300 es"
+       (output 'gl_Position) [:* a-position u-matrix]
+       v-color a-color}
+      {:version "300 es"
+       (output 'outColor 'vec4) v-color})))
 
 (defn create-canvas [card]
   (let [canvas (doto (js/document.createElement "canvas")
