@@ -1,4 +1,5 @@
-(ns iglu.data)
+(ns iglu.data
+  (:require [iglu.core :as c]))
 
 (def image-vertex-shader-source
   "#version 300 es
@@ -32,6 +33,17 @@
      // Look up a color from the texture.
      outColor = texture(u_image, v_texCoord).bgra;
   }")
+
+(let [a-position (c/attribute 'a_position 'vec4)
+      a-color (c/attribute 'a_color 'vec4)
+      u-matrix (c/uniform 'u_matrix 'mat4)
+      v-color (c/varying 'v_color 'vec4)]
+  (c/iglu->glsl
+    {:version "300 es"
+     (c/output 'gl_Position) [:* a-position u-matrix]
+     v-color a-color}
+    {:version "300 es"
+     (c/output 'outColor 'vec4) v-color}))
 
 (def two-d-vertex-shader-source
   "#version 300 es

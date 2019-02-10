@@ -1,6 +1,7 @@
 (ns iglu.core
   (:require [clojure.set :as set]
             [clojure.string :as str]
+            [iglu.glsl :as glsl]
             [iglu.parse :as parse]))
 
 (def attribute parse/->Attribute)
@@ -14,9 +15,6 @@
 
 (def function parse/->Function)
 
-(defn ^:private glsl [content]
-  content)
-
 (defn iglu->glsl [vertex-shader fragment-shader]
   (let [vertex-shader (parse/parse vertex-shader :vertex)
         fragment-shader (parse/parse fragment-shader :fragment)
@@ -26,5 +24,5 @@
     (when (seq varyings-not-passed)
       (parse/throw-error (str "The following varyings must be set in the vertex shader: "
                            (str/join ", " (map :name varyings-not-passed)))))
-    (mapv glsl [vertex-shader fragment-shader])))
+    (mapv glsl/->glsl [vertex-shader fragment-shader])))
 

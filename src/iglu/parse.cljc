@@ -47,7 +47,7 @@
 (s/def ::shader-opts (s/keys :opt-un [::version]))
 
 (s/def ::fn-expression (s/cat
-                         :fn (s/or :fn fn? :fn-obj function?)
+                         :fn (s/or :fn-obj fn? :fn-record function?)
                          :args (s/* ::subexpression)))
 (defn fn-expression? [x]
   (let [res (s/conform ::fn-expression x)]
@@ -55,15 +55,15 @@
       (some-> *functions-used* (swap! conj res)))
     res))
 (s/def ::expression (s/cat
-                      :fn keyword?
+                      :fn-name keyword?
                       :args (s/* ::subexpression)))
 (s/def ::subexpression (s/or
                          :number number?
                          :attribute attribute?
                          :uniform uniform?
                          :varying varying?
-                         :fn-expression fn-expression?
-                         :expression ::expression))
+                         :expression ::expression
+                         :fn-expression fn-expression?))
 (s/def ::shader (s/map-of any? ::subexpression))
 
 (s/def ::vertex-out (s/or
