@@ -44,16 +44,18 @@
     true))
 
 (s/def ::version string?)
-(s/def ::shader-opts (s/keys :opt-un [::version]))
+(s/def ::precision string?)
+(s/def ::shader-opts (s/keys :opt-un [::version ::precision]))
+(s/def ::shader-fns (s/map-of function? fn?))
 
 (s/def ::fn-expression (s/cat
-                         :fn (s/or :fn-obj fn? :fn-record function?)
+                         :fn function?
                          :args (s/* ::subexpression)))
 (defn fn-expression? [x]
   (let [res (s/conform ::fn-expression x)]
-    (when-not (= ::s/invalid res)
-      (some-> *functions-used* (swap! conj res)))
-    res))
+    (when (not= ::s/invalid res)
+      (some-> *functions-used* (swap! conj res))
+      res)))
 (s/def ::expression (s/cat
                       :fn-name keyword?
                       :args (s/* ::subexpression)))
@@ -68,34 +70,38 @@
 
 (s/def ::vertex-out (s/or
                       :output output?
-                      :function function?
                       :varying varying?))
-(s/def ::fragment-out (s/or
-                        :output output?
-                        :function function?))
+(s/def ::fragment-out output?)
 
 (defn throw-error [msg]
   (throw (#?(:clj Exception. :cljs js/Error.) msg)))
 
 (defn parse [content shader-type]
-  (let [{:keys [opts outs]} (reduce-kv
-                              (fn [m k v]
-                                (if (keyword? k)
-                                  (update m :opts assoc k v)
-                                  (let [spec (case shader-type
-                                               :vertex ::vertex-out
-                                               :fragment ::fragment-out)]
-                                    (if (= ::s/invalid (s/conform spec k))
-                                      (throw-error (expound/expound-str spec k))
-                                      (update m :outs assoc k v)))))
-                              {:opts {}
-                               :outs {}}
-                              content)
+  (let [{:keys [opts fns outs]}
+        (reduce-kv
+          (fn [m k v]
+            (cond
+              (keyword? k)
+              (update m :opts assoc k v)
+              (function? k)
+              (update m :fns assoc k v)
+              :else
+              (let [spec (case shader-type
+                           :vertex ::vertex-out
+                           :fragment ::fragment-out)]
+                (if (= ::s/invalid (s/conform spec k))
+                  (throw-error (expound/expound-str spec k))
+                  (update m :outs assoc k v)))))
+          {:opts {}
+           :fns {}
+           :outs {}}
+          content)
         *attributes (atom #{})
         *uniforms (atom #{})
         *varyings (atom #{})
         *functions (atom #{})
         opts-res (s/conform ::shader-opts opts)
+        fns-res (s/conform ::shader-fns fns)
         outs-res (binding [*attributes-used* *attributes
                            *uniforms-used* *uniforms
                            *varyings-used* *varyings
@@ -111,9 +117,11 @@
     (cond
       (= opts-res ::s/invalid)
       (throw-error (expound/expound-str ::shader-opts opts))
+      (= fns-res ::s/invalid)
+      (throw-error (expound/expound-str ::shader-fns fns))
       (= outs-res ::s/invalid)
       (throw-error (expound/expound-str ::shader outs)))
-    (merge opts-res outs-res
+    (merge opts-res fns-res outs-res
       {:attributes @*attributes
        :uniforms @*uniforms
        :varyings @*varyings

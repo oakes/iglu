@@ -6,9 +6,10 @@
 
 (defmulti ->function
   (fn [fn-name args]
-    (if (#{:+ :- :* :/} fn-name)
-      ::operator
-      fn-name)))
+    (cond
+      (#{:+ :- :* :/} fn-name) ::operator
+      (-> fn-name name (str/starts-with? "-")) ::property
+      :else fn-name)))
 
 (defmulti ->subexpression
   (fn [val] (first val)))
@@ -18,6 +19,11 @@
 (defmethod ->function ::operator [fn-name args]
   (str/join (str " " (name fn-name) " ") (mapv ->subexpression args)))
 
+(defmethod ->function ::property [fn-name args]
+  (when (> (count args) 1)
+    (parse/throw-error (str "Too many arguments given to " fn-name)))
+  (str (-> args first ->subexpression) "." (-> fn-name name (subs 1))))
+
 (defmethod ->function :default [fn-name args]
   (str (name fn-name) "(" (str/join ", " (mapv ->subexpression args)) ")"))
 
@@ -25,7 +31,11 @@
 
 (defmethod ->subexpression :expression [[_ expression]]
   (let [{:keys [fn-name args]} expression]
-    (->function fn-name args)))
+    (str "(" (->function fn-name args) ")")))
+
+(defmethod ->subexpression :fn-expression [[_ fn-expression]]
+  (let [[func & args] fn-expression]
+    (str (:name func) "(" (str/join ", " args) ")")))
 
 (defmethod ->subexpression :attribute [[_ attribute]]
   (str (:name attribute)))
@@ -35,6 +45,9 @@
 
 (defmethod ->subexpression :varying [[_ varying]]
   (str (:name varying)))
+
+(defmethod ->subexpression :number [[_ number]]
+  (str number))
 
 ;; var definitions
 
@@ -50,11 +63,13 @@
 
 ;; compiler fn
 
-(defn ->glsl [{:keys [version attributes uniforms varyings] :as shader}]
+(defn ->glsl [{:keys [version precision attributes uniforms varyings] :as shader}]
   (let [defined-varyings (filterv parse/varying? (keys shader))
         defined-outputs (filterv parse/output? (keys shader))
-        outputs (select-keys shader defined-outputs)]
-    (->> [(some->> version (str "#version "))
+        varyings-kv (select-keys shader defined-varyings)
+        outputs-kv (select-keys shader defined-outputs)]
+    (->> [(when version (str "#version " version))
+          (when precision (str "precision " precision ";"))
           (mapv ->in attributes)
           (mapv ->in varyings)
           (mapv ->uniform uniforms)
@@ -63,7 +78,7 @@
           "void main() {"
           (mapv (fn [[{:keys [name]} subexpression]]
                   (str "  " name " = " (->subexpression subexpression) ";"))
-            outputs)
+            (merge outputs-kv varyings-kv))
           "}"]
          flatten
          (remove nil?)
