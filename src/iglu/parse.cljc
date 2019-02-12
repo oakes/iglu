@@ -78,7 +78,7 @@
       (throw-error (expound/expound-str ::subexpression content)))
     res))
 
-(defn parse [content shader-type]
+(defn parse [shader-type content]
   (let [{:keys [opts fns outs]}
         (reduce-kv
           (fn [m k v]

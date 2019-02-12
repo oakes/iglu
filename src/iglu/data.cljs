@@ -4,49 +4,52 @@
 (let [a-position (c/attribute 'a_position 'vec2)
       u-matrix (c/uniform 'u_matrix 'mat3)
       u-image (c/uniform 'u_image 'sampler2D)
-      v-texcoord (c/varying 'v_texCoord 'vec2)
-      [v f] (c/iglu->glsl
-              {:version "300 es"
-               (c/output 'gl_Position)
-               [:vec4
-                [:-xy [:* u-matrix [:vec3 a-position 1]]]
-                0 1]
-               v-texcoord a-position}
-              {:version "300 es"
-               :precision "mediump float"
-               (c/output 'outColor 'vec4)
-               [:-bgra [:texture u-image v-texcoord]]})]
-  (def image-vertex-shader-source v)
-  (def image-fragment-shader-source f))
+      v-texcoord (c/varying 'v_texCoord 'vec2)]
+  (def image-vertex-shader-source
+    (c/iglu->glsl :vertex
+      {:version "300 es"
+       (c/output 'gl_Position)
+       [:vec4
+        [:-xy [:* u-matrix [:vec3 a-position 1]]]
+        0 1]
+       v-texcoord a-position}))
+  (def image-fragment-shader-source
+    (c/iglu->glsl :fragment
+      {:version "300 es"
+       :precision "mediump float"
+       (c/output 'outColor 'vec4)
+       [:-bgra [:texture u-image v-texcoord]]})))
 
 (let [a-position (c/attribute 'a_position 'vec2)
       u-matrix (c/uniform 'u_matrix 'mat3)
-      u-color (c/uniform 'u_color 'vec4)
-      [v f] (c/iglu->glsl
-              {:version "300 es"
-               (c/output 'gl_Position)
-               [:vec4
-                [:-xy [:* u-matrix [:vec3 a-position 1]]]
-                0 1]}
-              {:version "300 es"
-               :precision "mediump float"
-               (c/output 'outColor 'vec4) u-color})]
-  (def two-d-vertex-shader-source v)
-  (def two-d-fragment-shader-source f))
+      u-color (c/uniform 'u_color 'vec4)]
+  (def two-d-vertex-shader-source
+    (c/iglu->glsl :vertex
+      {:version "300 es"
+       (c/output 'gl_Position)
+       [:vec4
+        [:-xy [:* u-matrix [:vec3 a-position 1]]]
+        0 1]}))
+  (def two-d-fragment-shader-source
+    (c/iglu->glsl :fragment
+      {:version "300 es"
+       :precision "mediump float"
+       (c/output 'outColor 'vec4) u-color})))
 
 (let [a-position (c/attribute 'a_position 'vec4)
       a-color (c/attribute 'a_color 'vec4)
       u-matrix (c/uniform 'u_matrix 'mat4)
-      v-color (c/varying 'v_color 'vec4)
-      [v f] (c/iglu->glsl
-              {:version "300 es"
-               (c/output 'gl_Position) [:* u-matrix a-position]
-               v-color a-color}
-              {:version "300 es"
-               :precision "mediump float"
-               (c/output 'outColor 'vec4) v-color})]
-  (def three-d-vertex-shader-source v)
-  (def three-d-fragment-shader-source f))
+      v-color (c/varying 'v_color 'vec4)]
+  (def three-d-vertex-shader-source
+    (c/iglu->glsl :vertex
+      {:version "300 es"
+       (c/output 'gl_Position) [:* u-matrix a-position]
+       v-color a-color}))
+  (def three-d-fragment-shader-source
+    (c/iglu->glsl :fragment
+      {:version "300 es"
+       :precision "mediump float"
+       (c/output 'outColor 'vec4) v-color})))
 
 (def rect
   ;; x1 y1, x2 y1, x1 y2, x1 y2, x2 y1, x2 y2
