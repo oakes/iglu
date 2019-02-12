@@ -4,7 +4,7 @@
 
 ;; multimethods
 
-(defmulti ->function
+(defmulti ->function-call
   (fn [fn-name args]
     (cond
       (#{:+ :- :* :/} fn-name) ::operator
@@ -14,28 +14,28 @@
 (defmulti ->subexpression
   (fn [val] (first val)))
 
-;; ->function
+;; ->function-call
 
-(defmethod ->function ::operator [fn-name args]
+(defmethod ->function-call ::operator [fn-name args]
   (str/join (str " " (name fn-name) " ") (mapv ->subexpression args)))
 
-(defmethod ->function ::property [fn-name args]
+(defmethod ->function-call ::property [fn-name args]
   (when (> (count args) 1)
     (parse/throw-error (str "Too many arguments given to " fn-name)))
   (str (-> args first ->subexpression) "." (-> fn-name name (subs 1))))
 
-(defmethod ->function :default [fn-name args]
+(defmethod ->function-call :default [fn-name args]
   (str (name fn-name) "(" (str/join ", " (mapv ->subexpression args)) ")"))
 
 ;; ->expression
 
 (defmethod ->subexpression :expression [[_ expression]]
   (let [{:keys [fn-name args]} expression]
-    (str "(" (->function fn-name args) ")")))
+    (str "(" (->function-call fn-name args) ")")))
 
 (defmethod ->subexpression :fn-expression [[_ fn-expression]]
-  (let [[func & args] fn-expression]
-    (str (:name func) "(" (str/join ", " args) ")")))
+  (let [{:keys [fn-record args]} fn-expression]
+    (str (:name fn-record) "(" (str/join ", " (mapv ->subexpression args)) ")")))
 
 (defmethod ->subexpression :attribute [[_ attribute]]
   (str (:name attribute)))
@@ -49,6 +49,9 @@
 (defmethod ->subexpression :number [[_ number]]
   (str number))
 
+(defmethod ->subexpression :symbol [[_ symbol]]
+  (str symbol))
+
 ;; var definitions
 
 (defn ->in [{:keys [name type]}]
@@ -61,13 +64,30 @@
   (when type
     (str "out " type " " name ";")))
 
+(defn ->function [[{:keys [name arg-types return-type]} clj-fn]]
+  (let [arg-syms (mapv #(symbol (str "arg" %))
+                   (range (count arg-types)))
+        fn-body (parse/parse-subexpression (apply clj-fn arg-syms))]
+    [(str return-type " " name
+       "("
+       (str/join ", "
+         (mapv (fn [arg-type arg-sym]
+                 (str arg-type " " arg-sym))
+           arg-types arg-syms))
+       ")")
+     "{"
+     (str "  return " (->subexpression fn-body) ";")
+     "}"]))
+
 ;; compiler fn
 
 (defn ->glsl [{:keys [version precision attributes uniforms varyings] :as shader}]
   (let [defined-varyings (filterv parse/varying? (keys shader))
         defined-outputs (filterv parse/output? (keys shader))
+        defined-functions (filterv parse/function? (keys shader))
         varyings-kv (select-keys shader defined-varyings)
-        outputs-kv (select-keys shader defined-outputs)]
+        outputs-kv (select-keys shader defined-outputs)
+        functions-kv (select-keys shader defined-functions)]
     (->> [(when version (str "#version " version))
           (when precision (str "precision " precision ";"))
           (mapv ->in attributes)
@@ -75,6 +95,7 @@
           (mapv ->uniform uniforms)
           (mapv ->out defined-varyings)
           (mapv ->out defined-outputs)
+          (mapv ->function functions-kv)
           "void main() {"
           (mapv (fn [[{:keys [name]} subexpression]]
                   (str "  " name " = " (->subexpression subexpression) ";"))
@@ -83,5 +104,4 @@
          flatten
          (remove nil?)
          (str/join \newline))))
-     
 

@@ -49,23 +49,19 @@
 (s/def ::shader-fns (s/map-of function? fn?))
 
 (s/def ::fn-expression (s/cat
-                         :fn function?
+                         :fn-record function?
                          :args (s/* ::subexpression)))
-(defn fn-expression? [x]
-  (let [res (s/conform ::fn-expression x)]
-    (when (not= ::s/invalid res)
-      (some-> *functions-used* (swap! conj res))
-      res)))
 (s/def ::expression (s/cat
                       :fn-name keyword?
                       :args (s/* ::subexpression)))
 (s/def ::subexpression (s/or
                          :number number?
+                         :symbol symbol?
                          :attribute attribute?
                          :uniform uniform?
                          :varying varying?
                          :expression ::expression
-                         :fn-expression fn-expression?))
+                         :fn-expression ::fn-expression))
 (s/def ::shader (s/map-of any? ::subexpression))
 
 (s/def ::vertex-out (s/or
@@ -75,6 +71,12 @@
 
 (defn throw-error [msg]
   (throw (#?(:clj Exception. :cljs js/Error.) msg)))
+
+(defn parse-subexpression [content]
+  (let [res (s/conform ::subexpression content)]
+    (when (= res ::s/invalid)
+      (throw-error (expound/expound-str ::subexpression content)))
+    res))
 
 (defn parse [content shader-type]
   (let [{:keys [opts fns outs]}

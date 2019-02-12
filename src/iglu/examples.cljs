@@ -2,7 +2,7 @@
   (:require [iglu.core])
   (:require-macros [dynadoc.example :refer [defexample]]))
 
-(defexample iglu.core/iglu->glsl
+(defexample iglu.core/ex-basic
   (let [a-position (attribute 'a_position 'vec4)
         a-color (attribute 'a_color 'vec4)
         u-matrix (uniform 'u_matrix 'mat4)
@@ -12,6 +12,24 @@
        (output 'gl_Position) [:* a-position u-matrix]
        v-color a-color}
       {:version "300 es"
+       :precision "mediump float"
+       (output 'outColor 'vec4) v-color})))
+
+(defexample iglu.core/ex-function
+  (let [a-position (attribute 'a_position 'vec4)
+        a-color (attribute 'a_color 'vec4)
+        u-matrix (uniform 'u_matrix 'mat4)
+        v-color (varying 'v_color 'vec4)
+        multiply (fn [a b]
+                   [:* a b])
+        multiply-fn (function 'multiply '[mat4 vec4] 'vec4)]
+    (iglu->glsl
+      {:version "300 es"
+       (output 'gl_Position) [multiply-fn u-matrix a-position]
+       v-color a-color
+       multiply-fn multiply}
+      {:version "300 es"
+       :precision "mediump float"
        (output 'outColor 'vec4) v-color})))
 
 (defn create-canvas [card]
