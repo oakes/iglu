@@ -481,7 +481,7 @@
 (defn perspective-texture-3d-render [canvas
                                      {:keys [gl program vao matrix-location cnt]
                                       :as props}
-                                     {:keys [rx ry rz then now] :as state}]
+                                     {:keys [rx ry then now] :as state}]
   (ex/resize-canvas canvas)
   (.enable gl gl.CULL_FACE)
   (.enable gl gl.DEPTH_TEST)
@@ -490,21 +490,27 @@
   (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
   (.useProgram gl program)
   (.bindVertexArray gl vao)
-  (.uniformMatrix4fv gl matrix-location false
-    (->> (ex/perspective-matrix-3d {:field-of-view (ex/deg->rad 60)
-                                    :aspect (/ gl.canvas.clientWidth
-                                               gl.canvas.clientHeight)
-                                    :near 1
-                                    :far 2000})
-         (ex/multiply-matrices 4 (ex/translation-matrix-3d 0 0 -360))
-         (ex/multiply-matrices 4 (ex/x-rotation-matrix-3d rx))
-         (ex/multiply-matrices 4 (ex/y-rotation-matrix-3d ry))
-         (ex/multiply-matrices 4 (ex/z-rotation-matrix-3d rz))))
-  (.drawArrays gl gl.TRIANGLES 0 cnt)
-  (js/requestAnimationFrame #(perspective-texture-3d-render canvas props
-                               (-> state
-                                   (update :ry + (* 1.2 (- now then)))
-                                   (assoc :then now :now (* % 0.001))))))
+  (let [projection-matrix (ex/perspective-matrix-3d {:field-of-view (ex/deg->rad 60)
+                                                     :aspect (/ gl.canvas.clientWidth
+                                                                gl.canvas.clientHeight)
+                                                     :near 1
+                                                     :far 2000})
+        camera-pos (array 0 0 200)
+        target (array 0 0 0)
+        up (array 0 1 0)
+        camera-matrix (ex/look-at camera-pos target up)
+        view-matrix (ex/inverse-matrix 4 camera-matrix)
+        view-projection-matrix (ex/multiply-matrices 4 view-matrix projection-matrix)]
+    (.uniformMatrix4fv gl matrix-location false
+      (->> view-projection-matrix
+           (ex/multiply-matrices 4 (ex/x-rotation-matrix-3d rx))
+           (ex/multiply-matrices 4 (ex/y-rotation-matrix-3d ry))))
+    (.drawArrays gl gl.TRIANGLES 0 cnt)
+    (js/requestAnimationFrame #(perspective-texture-3d-render canvas props
+                                 (-> state
+                                     (update :rx + (* 1.2 (- now then)))
+                                     (update :ry + (* 0.7 (- now then)))
+                                     (assoc :then now :now (* % 0.001)))))))
 
 (defn perspective-texture-3d-init [canvas image]
   (let [gl (.getContext canvas "webgl2")
@@ -515,8 +521,21 @@
               (.bindVertexArray gl vao)
               vao)
         matrix-location (.getUniformLocation gl program "u_matrix")
-        cnt (ex/create-buffer gl program "a_position"
-              (js/Float32Array. data/f-3d) {:size 3})
+        matrix (ex/multiply-matrices 4
+                 (ex/translation-matrix-3d -50 -75 -15)
+                 (ex/x-rotation-matrix-3d js/Math.PI))
+        positions (js/Float32Array. data/f-3d)
+        _ (doseq [i (range 0 (.-length positions) 3)]
+            (let [v (ex/transform-vector matrix
+                      (array
+                        (aget positions (+ i 0))
+                        (aget positions (+ i 1))
+                        (aget positions (+ i 2))
+                        1))]
+              (aset positions (+ i 0) (aget v 0))
+              (aset positions (+ i 1) (aget v 1))
+              (aset positions (+ i 2) (aget v 2))))
+        cnt (ex/create-buffer gl program "a_position" positions {:size 3})
         _ (ex/create-buffer gl program "a_texcoord"
             (js/Float32Array. data/texcoords) {:normalize true})
         props {:gl gl
@@ -526,7 +545,6 @@
                :cnt cnt}
         state {:rx (ex/deg->rad 190)
                :ry (ex/deg->rad 40)
-               :rz (ex/deg->rad 320)
                :then 0
                :now 0}
         texture (.createTexture gl)]
