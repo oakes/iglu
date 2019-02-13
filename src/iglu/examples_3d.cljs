@@ -39,7 +39,8 @@
               (.bindVertexArray gl vao)
               vao)
         matrix-location (.getUniformLocation gl program "u_matrix")
-        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-3d) {:size 3})
+        cnt (ex/create-buffer gl program "a_position"
+              (js/Float32Array. data/f-3d) {:size 3})
         _ (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
             {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
         props {:gl gl
@@ -98,7 +99,8 @@
               (.bindVertexArray gl vao)
               vao)
         matrix-location (.getUniformLocation gl program "u_matrix")
-        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-3d) {:size 3})
+        cnt (ex/create-buffer gl program "a_position"
+              (js/Float32Array. data/f-3d) {:size 3})
         _ (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
             {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
         props {:gl gl
@@ -160,7 +162,8 @@
               (.bindVertexArray gl vao)
               vao)
         matrix-location (.getUniformLocation gl program "u_matrix")
-        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-3d) {:size 3})
+        cnt (ex/create-buffer gl program "a_position"
+              (js/Float32Array. data/f-3d) {:size 3})
         _ (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
             {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
         props {:gl gl
@@ -220,7 +223,8 @@
               (.bindVertexArray gl vao)
               vao)
         matrix-location (.getUniformLocation gl program "u_matrix")
-        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-3d) {:size 3})
+        cnt (ex/create-buffer gl program "a_position"
+              (js/Float32Array. data/f-3d) {:size 3})
         _ (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
             {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
         props {:gl gl
@@ -264,14 +268,17 @@
                                                      :near 1
                                                      :far 2000})
         camera-matrix (->> (ex/y-rotation-matrix-3d r)
-                           (ex/multiply-matrices 4 (ex/translation-matrix-3d 0 0 (* radius 1.5))))
+                           (ex/multiply-matrices 4
+                             (ex/translation-matrix-3d 0 0 (* radius 1.5))))
         view-matrix (ex/inverse-matrix 4 camera-matrix)
         view-projection-matrix (ex/multiply-matrices 4 view-matrix projection-matrix)]
     (dotimes [i num-fs]
       (let [angle (/ (* i js/Math.PI 2) num-fs)
             x (* (js/Math.cos angle) radius)
             z (* (js/Math.sin angle) radius)
-            matrix (ex/multiply-matrices 4 (ex/translation-matrix-3d x 0 z) view-projection-matrix)]
+            matrix (ex/multiply-matrices 4
+                     (ex/translation-matrix-3d x 0 z)
+                     view-projection-matrix)]
         (.uniformMatrix4fv gl matrix-location false matrix)
         (.drawArrays gl gl.TRIANGLES 0 cnt)))))
 
@@ -312,7 +319,8 @@
         (let [bounds (.getBoundingClientRect canvas)
               r (/ (- (.-clientX event) (.-left bounds) (/ (.-width bounds) 2))
                    (.-width bounds))]
-          (perspective-camera-3d-render canvas props (swap! *state assoc :r (-> r (* 360) ex/deg->rad))))))
+          (perspective-camera-3d-render canvas props
+            (swap! *state assoc :r (-> r (* 360) ex/deg->rad))))))
     (perspective-camera-3d-render canvas props @*state)))
 
 (defexample iglu.core/perspective-camera-3d
@@ -320,7 +328,7 @@
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-3d/perspective-camera-3d-init)))
 
-;; perspective-camera-target-3d-render
+;; perspective-camera-target-3d
 
 (defn perspective-camera-target-3d-render [canvas
                                            {:keys [gl program vao matrix-location cnt]}
@@ -341,7 +349,8 @@
                                                      :near 1
                                                      :far 2000})
         camera-matrix (->> (ex/y-rotation-matrix-3d r)
-                           (ex/multiply-matrices 4 (ex/translation-matrix-3d 0 50 (* radius 1.5))))
+                           (ex/multiply-matrices 4
+                             (ex/translation-matrix-3d 0 50 (* radius 1.5))))
         camera-pos (array
                      (aget camera-matrix 12)
                      (aget camera-matrix 13)
@@ -355,7 +364,9 @@
       (let [angle (/ (* i js/Math.PI 2) num-fs)
             x (* (js/Math.cos angle) radius)
             z (* (js/Math.sin angle) radius)
-            matrix (ex/multiply-matrices 4 (ex/translation-matrix-3d x 0 z) view-projection-matrix)]
+            matrix (ex/multiply-matrices 4
+                     (ex/translation-matrix-3d x 0 z)
+                     view-projection-matrix)]
         (.uniformMatrix4fv gl matrix-location false matrix)
         (.drawArrays gl gl.TRIANGLES 0 cnt)))))
 
@@ -396,7 +407,8 @@
         (let [bounds (.getBoundingClientRect canvas)
               r (/ (- (.-clientX event) (.-left bounds) (/ (.-width bounds) 2))
                    (.-width bounds))]
-          (perspective-camera-target-3d-render canvas props (swap! *state assoc :r (-> r (* 360) ex/deg->rad))))))
+          (perspective-camera-target-3d-render canvas props
+            (swap! *state assoc :r (-> r (* 360) ex/deg->rad))))))
     (perspective-camera-target-3d-render canvas props @*state)))
 
 (defexample iglu.core/perspective-camera-target-3d
@@ -404,10 +416,11 @@
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-3d/perspective-camera-target-3d-init)))
 
-;; perspective-animation-3d-render
+;; perspective-animation-3d
 
 (defn perspective-animation-3d-render [canvas
-                                       {:keys [gl program vao matrix-location cnt] :as props}
+                                       {:keys [gl program vao matrix-location cnt]
+                                        :as props}
                                        {:keys [rx ry rz then now] :as state}]
   (ex/resize-canvas canvas)
   (.enable gl gl.CULL_FACE)
@@ -442,7 +455,8 @@
               (.bindVertexArray gl vao)
               vao)
         matrix-location (.getUniformLocation gl program "u_matrix")
-        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-3d) {:size 3})
+        cnt (ex/create-buffer gl program "a_position"
+              (js/Float32Array. data/f-3d) {:size 3})
         _ (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
             {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
         props {:gl gl
