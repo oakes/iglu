@@ -51,6 +51,23 @@
        :precision "mediump float"
        (c/output 'outColor 'vec4) v-color})))
 
+(let [a-position (c/attribute 'a_position 'vec4)
+      a-color (c/attribute 'a_color 'vec4)
+      u-matrix (c/uniform 'u_matrix 'mat4)
+      a-texcoord (c/attribute 'a_texcoord 'vec2)
+      v-texcoord (c/varying 'v_texcoord 'vec2)
+      u-texture (c/uniform 'u_texture 'sampler2D)]
+  (def texture-vertex-shader-source
+    (c/iglu->glsl :vertex
+      {:version "300 es"
+       (c/output 'gl_Position) [:* u-matrix a-position]
+       v-texcoord a-texcoord}))
+  (def texture-fragment-shader-source
+    (c/iglu->glsl :fragment
+      {:version "300 es"
+       :precision "mediump float"
+       (c/output 'outColor 'vec4) [:texture u-texture v-texcoord]})))
+
 (def rect
   ;; x1 y1, x2 y1, x1 y2, x1 y2, x2 y1, x2 y2
   (array 0 0, 1 0, 0 1, 0 1, 1 0, 1 1))
@@ -323,3 +340,134 @@
     160, 160, 220,
     160, 160, 220,
     160, 160, 220,))
+
+(def texcoords
+  (array
+    ;; left column front
+    0, 0,
+    0, 1,
+    1, 0,
+    0, 1,
+    1, 1,
+    1, 0,
+
+    ;; top rung front
+    0, 0,
+    0, 1,
+    1, 0,
+    0, 1,
+    1, 1,
+    1, 0,
+
+    ;; middle rung front
+    0, 0,
+    0, 1,
+    1, 0,
+    0, 1,
+    1, 1,
+    1, 0,
+
+    ;; left column back
+    0, 0,
+    1, 0,
+    0, 1,
+    0, 1,
+    1, 0,
+    1, 1,
+
+    ;; top rung back
+    0, 0,
+    1, 0,
+    0, 1,
+    0, 1,
+    1, 0,
+    1, 1,
+
+    ;; middle rung back
+    0, 0,
+    1, 0,
+    0, 1,
+    0, 1,
+    1, 0,
+    1, 1,
+
+    ;; top
+    0, 0,
+    1, 0,
+    1, 1,
+    0, 0,
+    1, 1,
+    0, 1,
+
+    ;; top rung right
+    0, 0,
+    1, 0,
+    1, 1,
+    0, 0,
+    1, 1,
+    0, 1,
+
+    ;; under top rung
+    0, 0,
+    0, 1,
+    1, 1,
+    0, 0,
+    1, 1,
+    1, 0,
+
+    ;; between top rung and middle
+    0, 0,
+    1, 1,
+    0, 1,
+    0, 0,
+    1, 0,
+    1, 1,
+
+    ;; top of middle rung
+    0, 0,
+    1, 1,
+    0, 1,
+    0, 0,
+    1, 0,
+    1, 1,
+
+    ;; right of middle rung
+    0, 0,
+    1, 1,
+    0, 1,
+    0, 0,
+    1, 0,
+    1, 1,
+
+    ;; bottom of middle rung.
+    0, 0,
+    0, 1,
+    1, 1,
+    0, 0,
+    1, 1,
+    1, 0,
+
+    ;; right of bottom
+    0, 0,
+    1, 1,
+    0, 1,
+    0, 0,
+    1, 0,
+    1, 1,
+
+    ;; bottom
+    0, 0,
+    0, 1,
+    1, 1,
+    0, 0,
+    1, 1,
+    1, 0,
+
+    ;; left side
+    0, 0,
+    0, 1,
+    1, 1,
+    0, 0,
+    1, 1,
+    1, 0,))
+

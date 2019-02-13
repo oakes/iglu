@@ -476,3 +476,75 @@
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-3d/perspective-animation-3d-init)))
 
+;; perspective-texture-3d
+
+(defn perspective-texture-3d-render [canvas
+                                     {:keys [gl program vao matrix-location cnt]
+                                      :as props}
+                                     {:keys [rx ry rz then now] :as state}]
+  (ex/resize-canvas canvas)
+  (.enable gl gl.CULL_FACE)
+  (.enable gl gl.DEPTH_TEST)
+  (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
+  (.clearColor gl 0 0 0 0)
+  (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
+  (.useProgram gl program)
+  (.bindVertexArray gl vao)
+  (.uniformMatrix4fv gl matrix-location false
+    (->> (ex/perspective-matrix-3d {:field-of-view (ex/deg->rad 60)
+                                    :aspect (/ gl.canvas.clientWidth
+                                               gl.canvas.clientHeight)
+                                    :near 1
+                                    :far 2000})
+         (ex/multiply-matrices 4 (ex/translation-matrix-3d 0 0 -360))
+         (ex/multiply-matrices 4 (ex/x-rotation-matrix-3d rx))
+         (ex/multiply-matrices 4 (ex/y-rotation-matrix-3d ry))
+         (ex/multiply-matrices 4 (ex/z-rotation-matrix-3d rz))))
+  (.drawArrays gl gl.TRIANGLES 0 cnt)
+  (js/requestAnimationFrame #(perspective-texture-3d-render canvas props
+                               (-> state
+                                   (update :ry + (* 1.2 (- now then)))
+                                   (assoc :then now :now (* % 0.001))))))
+
+(defn perspective-texture-3d-init [canvas image]
+  (let [gl (.getContext canvas "webgl2")
+        program (ex/create-program gl
+                  data/texture-vertex-shader-source
+                  data/texture-fragment-shader-source)
+        vao (let [vao (.createVertexArray gl)]
+              (.bindVertexArray gl vao)
+              vao)
+        matrix-location (.getUniformLocation gl program "u_matrix")
+        cnt (ex/create-buffer gl program "a_position"
+              (js/Float32Array. data/f-3d) {:size 3})
+        _ (ex/create-buffer gl program "a_texcoord"
+            (js/Float32Array. data/texcoords) {:normalize true})
+        props {:gl gl
+               :program program
+               :vao vao
+               :matrix-location matrix-location
+               :cnt cnt}
+        state {:rx (ex/deg->rad 190)
+               :ry (ex/deg->rad 40)
+               :rz (ex/deg->rad 320)
+               :then 0
+               :now 0}
+        texture (.createTexture gl)]
+    (.activeTexture gl (+ gl.TEXTURE0 0))
+    (.bindTexture gl gl.TEXTURE_2D texture)
+    (.texImage2D gl gl.TEXTURE_2D 0 gl.RGBA gl.RGBA gl.UNSIGNED_BYTE image)
+    (.generateMipmap gl gl.TEXTURE_2D)
+    (perspective-texture-3d-render canvas props state)))
+
+(defn perspective-texture-3d-load [canvas]
+  (let [image (js/Image.)]
+    (doto image
+      (-> .-src (set! "f-texture.png"))
+      (-> .-onload (set! (fn []
+                           (perspective-texture-3d-init canvas image)))))))
+
+(defexample iglu.core/perspective-texture-3d
+  {:with-card card}
+  (->> (iglu.examples/create-canvas card)
+       (iglu.examples-3d/perspective-texture-3d-load)))
+
