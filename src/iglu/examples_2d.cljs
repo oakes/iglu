@@ -38,7 +38,7 @@
 
 ;; image
 
-(defn image-render [canvas image]
+(defn image-init [canvas image]
   (let [gl (.getContext canvas "webgl2")
         program (ex/create-program gl
                   data/image-vertex-shader-source
@@ -72,17 +72,17 @@
            (ex/multiply-matrices 3 (ex/scaling-matrix image.width image.height))))
     (.drawArrays gl gl.TRIANGLES 0 cnt)))
 
-(defn image-init [canvas]
+(defn image-load [canvas]
   (let [image (js/Image.)]
     (doto image
       (-> .-src (set! "leaves.jpg"))
       (-> .-onload (set! (fn []
-                           (image-render canvas image)))))))
+                           (image-init canvas image)))))))
 
 (defexample iglu.core/image
   {:with-card card}
   (->> (iglu.examples/create-canvas card)
-       (iglu.examples-2d/image-init)))
+       (iglu.examples-2d/image-load)))
 
 ;; translation
 
