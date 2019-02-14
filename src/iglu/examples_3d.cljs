@@ -537,7 +537,7 @@
               (aset positions (+ i 2) (aget v 2))))
         cnt (ex/create-buffer gl program "a_position" positions {:size 3})
         _ (ex/create-buffer gl program "a_texcoord"
-            (js/Float32Array. data/texcoords) {:normalize true})
+            (js/Float32Array. data/f-texcoords) {:normalize true})
         props {:gl gl
                :program program
                :vao vao
@@ -565,4 +565,84 @@
   {:with-card card}
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-3d/perspective-texture-3d-load)))
+
+;; perspective-texture-data-3d
+
+(defn perspective-texture-data-3d-render [canvas
+                                          {:keys [gl program vao matrix-location cnt]
+                                           :as props}
+                                          {:keys [rx ry then now] :as state}]
+  (ex/resize-canvas canvas)
+  (.enable gl gl.CULL_FACE)
+  (.enable gl gl.DEPTH_TEST)
+  (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
+  (.clearColor gl 0 0 0 0)
+  (.clear gl (bit-or gl.COLOR_BUFFER_BIT gl.DEPTH_BUFFER_BIT))
+  (.useProgram gl program)
+  (.bindVertexArray gl vao)
+  (let [projection-matrix (ex/perspective-matrix-3d {:field-of-view (ex/deg->rad 60)
+                                                     :aspect (/ gl.canvas.clientWidth
+                                                                gl.canvas.clientHeight)
+                                                     :near 1
+                                                     :far 2000})
+        camera-pos (array 0 0 2)
+        target (array 0 0 0)
+        up (array 0 1 0)
+        camera-matrix (ex/look-at camera-pos target up)
+        view-matrix (ex/inverse-matrix 4 camera-matrix)
+        view-projection-matrix (ex/multiply-matrices 4 view-matrix projection-matrix)]
+    (.uniformMatrix4fv gl matrix-location false
+      (->> view-projection-matrix
+           (ex/multiply-matrices 4 (ex/x-rotation-matrix-3d rx))
+           (ex/multiply-matrices 4 (ex/y-rotation-matrix-3d ry))))
+    (.drawArrays gl gl.TRIANGLES 0 cnt)
+    (js/requestAnimationFrame #(perspective-texture-data-3d-render canvas props
+                                 (-> state
+                                     (update :rx + (* 1.2 (- now then)))
+                                     (update :ry + (* 0.7 (- now then)))
+                                     (assoc :then now :now (* % 0.001)))))))
+
+(defn perspective-texture-data-3d-init [canvas]
+  (let [gl (.getContext canvas "webgl2")
+        program (ex/create-program gl
+                  data/texture-vertex-shader-source
+                  data/texture-fragment-shader-source)
+        vao (let [vao (.createVertexArray gl)]
+              (.bindVertexArray gl vao)
+              vao)
+        matrix-location (.getUniformLocation gl program "u_matrix")
+        matrix (ex/multiply-matrices 4
+                 (ex/translation-matrix-3d -50 -75 -15)
+                 (ex/x-rotation-matrix-3d js/Math.PI))
+        positions (js/Float32Array. data/cube)
+        cnt (ex/create-buffer gl program "a_position" positions {:size 3})
+        _ (ex/create-buffer gl program "a_texcoord"
+            (js/Float32Array. data/cube-texcoords) {:normalize true})
+        props {:gl gl
+               :program program
+               :vao vao
+               :matrix-location matrix-location
+               :cnt cnt}
+        state {:rx (ex/deg->rad 190)
+               :ry (ex/deg->rad 40)
+               :then 0
+               :now 0}
+        texture (.createTexture gl)
+        level 0, internal-fmt gl.R8, width 3, height 2, border 0
+        fmt gl.RED, type gl.UNSIGNED_BYTE
+        data (js/Uint8Array. (array 128 64 128 0 192 0))]
+    (.activeTexture gl (+ gl.TEXTURE0 0))
+    (.bindTexture gl gl.TEXTURE_2D texture)
+    (.pixelStorei gl gl.UNPACK_ALIGNMENT 1)
+    (.texImage2D gl gl.TEXTURE_2D level internal-fmt width height border fmt type data)
+    (.texParameteri gl gl.TEXTURE_2D gl.TEXTURE_MIN_FILTER gl.NEAREST)
+    (.texParameteri gl gl.TEXTURE_2D gl.TEXTURE_MAG_FILTER gl.NEAREST)
+    (.texParameteri gl gl.TEXTURE_2D gl.TEXTURE_WRAP_S gl.CLAMP_TO_EDGE)
+    (.texParameteri gl gl.TEXTURE_2D gl.TEXTURE_WRAP_T gl.CLAMP_TO_EDGE)
+    (perspective-texture-data-3d-render canvas props state)))
+
+(defexample iglu.core/perspective-texture-data-3d
+  {:with-card card}
+  (->> (iglu.examples/create-canvas card)
+       (iglu.examples-3d/perspective-texture-data-3d-init)))
 
