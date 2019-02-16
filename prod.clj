@@ -17,25 +17,28 @@
   (-> "project.clj" load-file var-get))
 
 (defn read-deps-edn [aliases-to-include]
-  (let [{:keys [paths deps aliases]} (-> "deps.edn" slurp clojure.edn/read-string)]
-    (->> (select-keys aliases aliases-to-include)
-          vals
-          (mapcat :extra-deps)
-          (into deps)
-          (reduce
-            (fn [deps [artifact info]]
-              (if-let [version (:mvn/version info)]
-                (conj deps
-                  (transduce cat conj [artifact version]
-                    (select-keys info [:scope :exclusions])))
-                deps))
-            []))))
+  (let [{:keys [paths deps aliases]} (-> "deps.edn" slurp clojure.edn/read-string)
+        deps (->> (select-keys aliases aliases-to-include)
+                  vals
+                  (mapcat :extra-deps)
+                  (into deps)
+                  (reduce
+                    (fn [deps [artifact info]]
+                      (if-let [version (:mvn/version info)]
+                        (conj deps
+                          (transduce cat conj [artifact version]
+                            (select-keys info [:scope :exclusions])))
+                        deps))
+                    []))]
+    {:dependencies deps
+     :source-paths paths
+     :resource-paths paths}))
 
 (defmethod task "install"
   [_]
   (-> (read-project-clj)
       (dissoc :middleware)
-      (assoc :dependencies (read-deps-edn []))
+      (merge (read-deps-edn []))
       p/init-project
       install)
   (System/exit 0))
@@ -44,7 +47,7 @@
   [_]
   (-> (read-project-clj)
       (dissoc :middleware)
-      (assoc :dependencies (read-deps-edn []))
+      (merge (read-deps-edn []))
       p/init-project
       (deploy "clojars"))
   (System/exit 0))
