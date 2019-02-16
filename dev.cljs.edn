@@ -1,4 +1,4 @@
-{:main          iglu.docs
+{:main          iglu.dev
  :optimizations :none
  :output-to     "target/dynadoc-extend/main.js"
  :output-dir    "target/dynadoc-extend/main.out"

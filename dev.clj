@@ -3,5 +3,5 @@
   '[dynadoc.core :as dynadoc])
 
 (dynadoc/-main "--port" "5000")
-(figwheel/-main "--build" "doc")
+(figwheel/-main "--build" "dev")
 
