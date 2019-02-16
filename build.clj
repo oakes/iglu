@@ -11,10 +11,10 @@
   '[figwheel.main :as figwheel]
   '[dynadoc.core :as dynadoc])
 
-(defmethod task "run-docs"
+(defmethod task "doc"
   [_]
   (dynadoc/-main "--port" "5000")
-  (figwheel/-main "--build" "docs"))
+  (figwheel/-main "--build" "doc"))
 
 (require
   '[leiningen.core.project :as p :refer [defproject]]
