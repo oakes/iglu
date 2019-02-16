@@ -5,7 +5,6 @@
                               dynadoc {:mvn/version "RELEASE"}
                               com.bhauman/figwheel-main {:mvn/version "0.2.0"}}
                  :extra-paths ["target" "dev-resources"]}
-           :prod {:extra-deps {org.clojure/clojurescript {:mvn/version "1.10.520"}
-                               leiningen {:mvn/version "2.9.0"}
+           :prod {:extra-deps {leiningen {:mvn/version "2.9.0"}
                                lein-tools-deps {:mvn/version "0.4.3"
                                                 :exclusions [com.google.inject/guice$no_aop]}}}}}
