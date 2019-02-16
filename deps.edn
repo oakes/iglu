@@ -2,7 +2,7 @@
  :deps {defexample {:mvn/version "1.7.0"}
         expound {:mvn/version "0.7.0"}}
  :aliases {:dev {:extra-deps {org.clojure/clojurescript {:mvn/version "1.10.520"}
-                              dynadoc {:mvn/version "1.5.4-SNAPSHOT"}
+                              dynadoc {:mvn/version "RELEASE"}
                               com.bhauman/figwheel-main {:mvn/version "0.2.0"}}
                  :extra-paths ["target" "dev-resources"]}
            :prod {:extra-deps {org.clojure/clojurescript {:mvn/version "1.10.520"}
