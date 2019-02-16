@@ -31,7 +31,6 @@
                         deps))
                     []))]
     {:dependencies deps
-     :source-paths paths
      :resource-paths paths}))
 
 (defmethod task "install"
