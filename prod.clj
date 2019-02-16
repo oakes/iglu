@@ -1,3 +1,8 @@
+(require
+  '[leiningen.core.project :as p :refer [defproject]]
+  '[leiningen.install :refer [install]]
+  '[leiningen.deploy :refer [deploy]])
+
 (defmulti task first)
 
 (defmethod task :default
@@ -6,20 +11,6 @@
         interposed (->> all-tasks (interpose ", ") (apply str))]
     (println "Unknown or missing task. Choose one of:" interposed)
     (System/exit 1)))
-
-(require
-  '[figwheel.main :as figwheel]
-  '[dynadoc.core :as dynadoc])
-
-(defmethod task "doc"
-  [_]
-  (dynadoc/-main "--port" "5000")
-  (figwheel/-main "--build" "doc"))
-
-(require
-  '[leiningen.core.project :as p :refer [defproject]]
-  '[leiningen.install :refer [install]]
-  '[leiningen.deploy :refer [deploy]])
 
 (defn read-project-clj []
   (p/ensure-dynamic-classloader)
