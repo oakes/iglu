@@ -20,6 +20,10 @@
 
 (def ^:dynamic *functions-used* nil)
 
+(def ^:dynamic *dependencies* nil)
+
+(def ^:dynamic *current-out* nil)
+
 (defn attribute? [x]
   (when (instance? Attribute x)
     (some-> *attributes-used* (swap! conj x))
@@ -33,6 +37,10 @@
 (defn varying? [x]
   (when (instance? Varying x)
     (some-> *varyings-used* (swap! conj x))
+    (when-let [out *current-out*]
+      (some-> *dependencies*
+              (swap! update out (fn [out-deps]
+                                  (conj (set out-deps) x)))))
     true))
 
 (defn output? [x]
@@ -62,7 +70,6 @@
                          :varying varying?
                          :expression ::expression
                          :fn-expression ::fn-expression))
-(s/def ::shader (s/map-of any? ::subexpression))
 
 (s/def ::vertex-out (s/or
                       :output output?
@@ -102,30 +109,33 @@
         *uniforms (atom #{})
         *varyings (atom #{})
         *functions (atom #{})
+        *dependencies (atom {})
         opts-res (s/conform ::shader-opts opts)
         fns-res (s/conform ::shader-fns fns)
         outs-res (binding [*attributes-used* *attributes
                            *uniforms-used* *uniforms
                            *varyings-used* *varyings
-                           *functions-used* *functions]
-                   (s/conform ::shader outs))]
-    (case shader-type
-      :vertex (some->> @*varyings first
-                       (str "You may not use a varying in a vertex shader: ")
-                       throw-error)
-      :fragment (some->> @*attributes first
-                         (str "You may not use an attribute in a fragment shader: ")
-                         throw-error))
+                           *functions-used* *functions
+                           *dependencies* *dependencies]
+                   (reduce-kv
+                     (fn [m k v]
+                       (binding [*current-out* k]
+                         (assoc m k (parse-subexpression v))))
+                     {}
+                     outs))]
+    (when (= :fragment shader-type)
+      (some->> @*attributes first
+               (str "You may not use an attribute in a fragment shader: ")
+               throw-error))
     (cond
       (= opts-res ::s/invalid)
       (throw-error (expound/expound-str ::shader-opts opts))
       (= fns-res ::s/invalid)
-      (throw-error (expound/expound-str ::shader-fns fns))
-      (= outs-res ::s/invalid)
-      (throw-error (expound/expound-str ::shader outs)))
+      (throw-error (expound/expound-str ::shader-fns fns)))
     (merge opts-res fns-res outs-res
       {:attributes @*attributes
        :uniforms @*uniforms
        :varyings @*varyings
-       :functions @*functions})))
+       :functions @*functions
+       :dependencies @*dependencies})))
 

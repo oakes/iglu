@@ -81,13 +81,21 @@
 
 ;; compiler fn
 
-(defn ->glsl [{:keys [version precision attributes uniforms varyings] :as shader}]
+(defn ->glsl [{:keys [version precision attributes uniforms varyings dependencies] :as shader}]
   (let [defined-varyings (filterv parse/varying? (keys shader))
         defined-outputs (filterv parse/output? (keys shader))
         defined-functions (filterv parse/function? (keys shader))
         varyings-kv (select-keys shader defined-varyings)
         outputs-kv (select-keys shader defined-outputs)
-        functions-kv (select-keys shader defined-functions)]
+        functions-kv (select-keys shader defined-functions)
+        sorted-outputs (->> (merge outputs-kv varyings-kv)
+                            seq
+                            (sort-by first
+                              (fn [a b]
+                                (cond
+                                  (contains? (dependencies a) b) 1
+                                  (contains? (dependencies b) a) -1
+                                  :else 0))))]
     (->> [(when version (str "#version " version))
           (when precision (str "precision " precision ";"))
           (mapv ->in attributes)
@@ -99,7 +107,7 @@
           "void main() {"
           (mapv (fn [[{:keys [name]} subexpression]]
                   (str "  " name " = " (->subexpression subexpression) ";"))
-            (merge outputs-kv varyings-kv))
+            sorted-outputs)
           "}"]
          flatten
          (remove nil?)
