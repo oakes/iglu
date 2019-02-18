@@ -24,23 +24,34 @@
 
 (def ^:dynamic *current-out* nil)
 
+(defn throw-error [msg]
+  (throw (#?(:clj Exception. :cljs js/Error.) msg)))
+
+(defn add-dependency [x]
+  (when-let [out *current-out*]
+    (some-> *dependencies*
+            (swap! (fn [deps]
+                     (when (contains? (deps x) out)
+                       (throw-error (str "Cyclic dependency detected between "
+                                      (:name x) " and " (:name out))))
+                     (update deps out #(conj (set %) x)))))))
+
 (defn attribute? [x]
   (when (instance? Attribute x)
     (some-> *attributes-used* (swap! conj x))
+    (add-dependency x)
     true))
 
 (defn uniform? [x]
   (when (instance? Uniform x)
     (some-> *uniforms-used* (swap! conj x))
+    (add-dependency x)
     true))
 
 (defn varying? [x]
   (when (instance? Varying x)
     (some-> *varyings-used* (swap! conj x))
-    (when-let [out *current-out*]
-      (some-> *dependencies*
-              (swap! update out (fn [out-deps]
-                                  (conj (set out-deps) x)))))
+    (add-dependency x)
     true))
 
 (defn output? [x]
@@ -75,9 +86,6 @@
                       :output output?
                       :varying varying?))
 (s/def ::fragment-out output?)
-
-(defn throw-error [msg]
-  (throw (#?(:clj Exception. :cljs js/Error.) msg)))
 
 (defn parse-subexpression [content]
   (let [res (s/conform ::subexpression content)]
