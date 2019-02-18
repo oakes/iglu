@@ -1,5 +1,7 @@
 (ns iglu.parse
-  (:require [clojure.spec.alpha :as s]
+  (:require [clojure.set :as set]
+            [clojure.string :as str]
+            [clojure.spec.alpha :as s]
             [expound.alpha :as expound]))
 
 (defrecord Attribute [name type])
@@ -131,19 +133,25 @@
                          (assoc m k (parse-subexpression v))))
                      {}
                      outs))]
-    (when (= :fragment shader-type)
-      (some->> @*attributes first
-               (str "You may not use an attribute in a fragment shader: ")
-               throw-error))
     (cond
       (= opts-res ::s/invalid)
       (throw-error (expound/expound-str ::shader-opts opts))
       (= fns-res ::s/invalid)
       (throw-error (expound/expound-str ::shader-fns fns)))
-    (merge opts-res fns-res outs-res
-      {:attributes @*attributes
-       :uniforms @*uniforms
-       :varyings @*varyings
-       :functions @*functions
-       :dependencies @*dependencies})))
+    (when (= :fragment shader-type)
+      (some->> @*attributes first
+               (str "You may not use an attribute in a fragment shader: ")
+               throw-error))
+    (let [res (merge opts-res fns-res outs-res)]
+      (let [fns-not-set (set/difference @*functions (-> res keys set))]
+        (when (seq fns-not-set)
+          (throw-error
+            (str "The following functions must be set in the shader: "
+              (str/join ", " (map :name fns-not-set))))))
+      (merge res
+        {:attributes @*attributes
+         :uniforms @*uniforms
+         :varyings @*varyings
+         :functions @*functions
+         :dependencies @*dependencies}))))
 
