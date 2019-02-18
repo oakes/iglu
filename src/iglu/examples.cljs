@@ -3,36 +3,88 @@
   (:require-macros [dynadoc.example :refer [defexample]]))
 
 (defexample iglu.core/ex-basic
-  (let [a-position (attribute 'a_position 'vec4)
-        a-color (attribute 'a_color 'vec4)
-        u-matrix (uniform 'u_matrix 'mat4)
-        v-color (varying 'v_color 'vec4)]
-    [(iglu->glsl :vertex
-       {:version "300 es"
-        (output 'gl_Position) [:* a-position u-matrix]
-        v-color a-color})
-     (iglu->glsl :fragment
-       {:version "300 es"
-        :precision "mediump float"
-        (output 'outColor 'vec4) v-color})]))
+  [(iglu->glsl
+     {:type :vertex
+      :version "300 es"
+      :attributes
+      {'a_position 'vec4
+       'a_color 'vec4}
+      :uniforms
+      {'u_matrix 'mat4}
+      :varyings
+      {'v_color 'vec4}
+      :main
+      {'gl_Position [:* 'a_position 'u_matrix]
+       'v_color 'a_color}})
+   (iglu->glsl
+     {:type :fragment
+      :version "300 es"
+      :precision "mediump float"
+      :varyings
+      {'v_color 'vec4}
+      :outputs
+      {'outColor 'vec4}
+      :main
+      {'outColor 'v_color}})])
 
 (defexample iglu.core/ex-function
-  (let [a-position (attribute 'a_position 'vec4)
-        a-color (attribute 'a_color 'vec4)
-        u-matrix (uniform 'u_matrix 'mat4)
-        v-color (varying 'v_color 'vec4)
-        multiply (fn [a b]
-                   [:* a b])
-        multiply-fn (function 'multiply '[mat4 vec4] 'vec4)]
-    [(iglu->glsl :vertex
-       {:version "300 es"
-        (output 'gl_Position) [multiply-fn u-matrix a-position]
-        v-color a-color
-        multiply-fn multiply})
-     (iglu->glsl :fragment
-       {:version "300 es"
+  (let [multiply (fn [a b]
+                   [:* a b])]
+    [(iglu->glsl
+       {:type :vertex
+        :version "300 es"
+        :attributes
+        {'a_position 'vec4
+         'a_color 'vec4}
+        :uniforms
+        {'u_matrix 'mat4}
+        :varyings
+        {'v_color 'vec4}
+        :functions
+        {'multiply {:ret 'vec4
+                    :args '[mat4 vec4]
+                    :clj-fn multiply}}
+        :main
+        {'gl_Position ['multiply 'u_matrix 'a_position]
+         'v_color 'a_color}})
+     (iglu->glsl
+       {:type :fragment
+        :version "300 es"
         :precision "mediump float"
-        (output 'outColor 'vec4) v-color})]))
+        :varyings
+        {'v_color 'vec4}
+        :outputs
+        {'outColor 'vec4}
+        :main
+        {'outColor 'v_color}})]))
+
+(defexample iglu.core/ex-let
+  [(println
+     (iglu->glsl
+       {:type :vertex
+        :version "300 es"
+        :uniforms
+        {'u_worldViewProjection 'mat4
+         'u_lightWorldPos 'vec3
+         'u_world 'mat4
+         'u_viewInverse 'mat4
+         'u_worldInverseTranspose 'mat4}
+        :attributes
+        {'a_position 'vec4
+         'a_normal 'vec3
+         'a_texCoord 'vec2}
+        :varyings
+        {'v_position 'vec4
+         'v_texCoord 'vec2
+         'v_normal 'vec3
+         'v_surfaceToLight 'vec3
+         'v_surfaceToView 'vec3}
+        :main
+        {'v_texCoord 'a_texCoord
+         'v_position [:* 'u_worldViewProjection 'a_position]
+         'v_normal [:-xyz [:* 'u_worldInverseTranspose [:vec4 'a_normal 0]]]
+         'v_surfaceToLight [:-xyz [:- 'u_lightWorldPos [:* 'u_world 'a_position]]]
+         'gl_Position 'v_position}}))])
 
 (defn create-canvas [card]
   (let [canvas (doto (js/document.createElement "canvas")
