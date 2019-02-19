@@ -25,11 +25,11 @@
 
 (s/def ::ret symbol?)
 (s/def ::args (s/* (s/cat :type symbol? :name symbol?)))
-(s/def ::body ::subexpression)
+(s/def ::body (s/or
+                :one-line ::expression
+                :multi-line (s/* (s/spec ::expression))))
 (s/def ::function (s/keys :req-un [::ret ::args ::body]))
 (s/def ::functions (s/map-of symbol? ::function))
-
-(s/def ::main (s/map-of symbol? ::subexpression))
 
 (s/def ::shader (s/keys :opt-un [::type
                                  ::version
@@ -38,8 +38,7 @@
                                  ::attributes
                                  ::varyings
                                  ::outputs
-                                 ::functions
-                                 ::main]))
+                                 ::functions]))
 
 (defn parse-subexpression [content]
   (let [res (s/conform ::subexpression content)]

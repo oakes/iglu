@@ -13,9 +13,11 @@
        {u_matrix mat4}
        :varyings
        {v_color vec4}
-       :main
-       {gl_Position [:* a_position u_matrix]
-        v_color a_color}})
+       :functions
+       {main {:ret void
+              :args []
+              :body [[:= gl_Position [:* a_position u_matrix]]
+                     [:= v_color a_color]]}}})
    (iglu->glsl
      '{:type :fragment
        :version "300 es"
@@ -24,8 +26,10 @@
        {v_color vec4}
        :outputs
        {outColor vec4}
-       :main
-       {outColor v_color}})])
+       :functions
+       {main {:ret void
+              :args []
+              :body [:= outColor v_color]}}})])
 
 (defexample iglu.core/ex-function
   [(iglu->glsl
@@ -41,10 +45,11 @@
        :functions
        {multiply {:ret vec4
                   :args [mat4 x, vec4 y]
-                  :body [:* x y]}}
-       :main
-       {gl_Position [multiply u_matrix a_position]
-        v_color a_color}})
+                  :body [:* x y]}
+        main {:ret void
+              :args []
+              :body [[:= gl_Position [multiply u_matrix a_position]]
+                     [:= v_color a_color]]}}})
    (iglu->glsl
      '{:type :fragment
        :version "300 es"
@@ -53,36 +58,39 @@
        {v_color vec4}
        :outputs
        {outColor vec4}
-       :main
-       {outColor v_color}})])
+       :functions
+       {main {:ret void
+              :args []
+              :body [:= outColor v_color]}}})])
 
 (defexample iglu.core/ex-let
-  [(println
-     (iglu->glsl
-       '{:type :vertex
-         :version "300 es"
-         :uniforms
-         {u_worldViewProjection mat4
-          u_lightWorldPos vec3
-          u_world mat4
-          u_viewInverse mat4
-          u_worldInverseTranspose mat4}
-         :attributes
-         {a_position vec4
-          a_normal vec3
-          a_texCoord vec2}
-         :varyings
-         {v_position vec4
-          v_texCoord vec2
-          v_normal vec3
-          v_surfaceToLight vec3
-          v_surfaceToView vec3}
-         :main
-         {v_texCoord a_texCoord
-          v_position [:* u_worldViewProjection a_position]
-          v_normal [:-xyz [:* u_worldInverseTranspose [:vec4 a_normal 0]]]
-          v_surfaceToLight [:-xyz [:- u_lightWorldPos [:* u_world a_position]]]
-          gl_Position v_position}}))])
+  [(iglu->glsl
+     '{:type :vertex
+       :version "300 es"
+       :uniforms
+       {u_worldViewProjection mat4
+        u_lightWorldPos vec3
+        u_world mat4
+        u_viewInverse mat4
+        u_worldInverseTranspose mat4}
+       :attributes
+       {a_position vec4
+        a_normal vec3
+        a_texCoord vec2}
+       :varyings
+       {v_position vec4
+        v_texCoord vec2
+        v_normal vec3
+        v_surfaceToLight vec3
+        v_surfaceToView vec3}
+       :functions
+       {main {:ret void
+              :args []
+              :body [[:= v_texCoord a_texCoord]
+                     [:= v_position [:* u_worldViewProjection a_position]]
+                     [:= v_normal [:-xyz [:* u_worldInverseTranspose [:vec4 a_normal 0]]]]
+                     [:= v_surfaceToLight [:-xyz [:- u_lightWorldPos [:* u_world a_position]]]]
+                     [:= gl_Position v_position]]}}})])
 
 (defn create-canvas [card]
   (let [canvas (doto (js/document.createElement "canvas")
