@@ -3,119 +3,119 @@
 
 (def image-vertex-shader-source
   (c/iglu->glsl
-    {:type :vertex
-     :version "300 es"
-     :attributes
-     {'a_position 'vec2}
-     :uniforms
-     {'u_matrix 'mat3
-      'u_image 'sampler2D}
-     :varyings
-     {'v_texCoord 'vec2}
-     :main
-     {'gl_Position
-      [:vec4
-       [:-xy [:* 'u_matrix [:vec3 'a_position 1]]]
-       0 1]
-      'v_texCoord 'a_position}}))
+    '{:type :vertex
+      :version "300 es"
+      :attributes
+      {a_position vec2}
+      :uniforms
+      {u_matrix mat3
+       u_image sampler2D}
+      :varyings
+      {v_texCoord vec2}
+      :main
+      {gl_Position
+       [:vec4
+        [:-xy [:* u_matrix [:vec3 a_position 1]]]
+        0 1]
+       v_texCoord a_position}}))
 
 (def image-fragment-shader-source
   (c/iglu->glsl
-    {:type :fragment
-     :version "300 es"
-     :precision "mediump float"
-     :uniforms
-     {'u_image 'sampler2D}
-     :varyings
-     {'v_texCoord 'vec2}
-     :outputs
-     {'outColor 'vec4}
-     :main
-     {'outColor [:-bgra [:texture 'u_image 'v_texCoord]]}}))
+    '{:type :fragment
+      :version "300 es"
+      :precision "mediump float"
+      :uniforms
+      {u_image sampler2D}
+      :varyings
+      {v_texCoord vec2}
+      :outputs
+      {outColor vec4}
+      :main
+      {outColor [:-bgra [:texture u_image v_texCoord]]}}))
 
 (def two-d-vertex-shader-source
   (c/iglu->glsl
-    {:type :vertex
-     :version "300 es"
-     :attributes
-     {'a_position 'vec2}
-     :uniforms
-     {'u_matrix 'mat3}
-     :main
-     {'gl_Position
-      [:vec4
-       [:-xy [:* 'u_matrix [:vec3 'a_position 1]]]
-       0 1]}}))
+    '{:type :vertex
+      :version "300 es"
+      :attributes
+      {a_position vec2}
+      :uniforms
+      {u_matrix mat3}
+      :main
+      {gl_Position
+       [:vec4
+        [:-xy [:* u_matrix [:vec3 a_position 1]]]
+        0 1]}}))
 
 (def two-d-fragment-shader-source
   (c/iglu->glsl
-    {:type :fragment
-     :version "300 es"
-     :precision "mediump float"
-     :uniforms
-     {'u_color 'vec4}
-     :outputs
-     {'outColor 'vec4}
-     :main
-     {'outColor 'u_color}}))
+    '{:type :fragment
+      :version "300 es"
+      :precision "mediump float"
+      :uniforms
+      {u_color vec4}
+      :outputs
+      {outColor vec4}
+      :main
+      {outColor u_color}}))
 
 (def three-d-vertex-shader-source
   (c/iglu->glsl
-    {:type :vertex
-     :version "300 es"
-     :attributes
-     {'a_position 'vec4
-      'a_color 'vec4}
-     :uniforms
-     {'u_matrix 'mat4}
-     :varyings
-     {'v_color 'vec4}
-     :main
-     {'gl_Position [:* 'u_matrix 'a_position]
-      'v_color 'a_color}}))
+    '{:type :vertex
+      :version "300 es"
+      :attributes
+      {a_position vec4
+       a_color vec4}
+      :uniforms
+      {u_matrix mat4}
+      :varyings
+      {v_color vec4}
+      :main
+      {gl_Position [:* u_matrix a_position]
+       v_color a_color}}))
 
 (def three-d-fragment-shader-source
   (c/iglu->glsl
-    {:type :fragment
-     :version "300 es"
-     :precision "mediump float"
-     :varyings
-     {'v_color 'vec4}
-     :outputs
-     {'outColor 'vec4}
-     :main
-     {'outColor 'v_color}}))
+    '{:type :fragment
+      :version "300 es"
+      :precision "mediump float"
+      :varyings
+      {v_color vec4}
+      :outputs
+      {outColor vec4}
+      :main
+      {outColor v_color}}))
 
 (def texture-vertex-shader-source
   (c/iglu->glsl
-    {:type :vertex
-     :version "300 es"
-     :attributes
-     {'a_position 'vec4
-      'a_color 'vec4
-      'a_texcoord 'vec2}
-     :uniforms
-     {'u_matrix 'mat4
-      'u_texture 'sampler2D}
-     :varyings
-     {'v_texcoord 'vec2}
-     :main
-     {'gl_Position [:* 'u_matrix 'a_position]
-      'v_texcoord 'a_texcoord}}))
+    '{:type :vertex
+      :version "300 es"
+      :attributes
+      {a_position vec4
+       a_color vec4
+       a_texcoord vec2}
+      :uniforms
+      {u_matrix mat4
+       u_texture sampler2D}
+      :varyings
+      {v_texcoord vec2}
+      :main
+      {gl_Position [:* u_matrix a_position]
+       v_texcoord a_texcoord}}))
 
 (def texture-fragment-shader-source
   (c/iglu->glsl
-    {:type :fragment
-     :version "300 es"
-     :precision "mediump float"
-     :uniforms
-     {'u_texture 'sampler2D}
-     :varyings
-     {'v_texcoord 'vec2}
-     :outputs
-     {'outColor 'vec4}
-     :main
-     {'outColor [:texture 'u_texture 'v_texcoord]}}))
+    '{:type :fragment
+      :version "300 es"
+      :precision "mediump float"
+      :uniforms
+      {u_texture sampler2D}
+      :varyings
+      {v_texcoord vec2}
+      :outputs
+      {outColor vec4}
+      :main
+      {outColor [:texture u_texture v_texcoord]}}))
 
 (def rect
   ;; x1 y1, x2 y1, x1 y2, x1 y2, x2 y1, x2 y2
