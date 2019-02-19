@@ -7,7 +7,7 @@
 
 (s/def ::declarations (s/map-of symbol? symbol?))
 
-(s/def ::type keyword?)
+(s/def ::type #{:vertex :fragment})
 (s/def ::version string?)
 (s/def ::precision string?)
 (s/def ::uniforms ::declarations)
