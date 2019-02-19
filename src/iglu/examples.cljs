@@ -29,22 +29,21 @@
 
 (defexample iglu.core/ex-function
   [(iglu->glsl
-     {:type :vertex
-      :version "300 es"
-      :attributes
-      '{a_position vec4
+     '{:type :vertex
+       :version "300 es"
+       :attributes
+       {a_position vec4
         a_color vec4}
-      :uniforms
-      '{u_matrix mat4}
-      :varyings
-      '{v_color vec4}
-      :functions
-      {'multiply {:ret 'vec4
-                  :args '[mat4 vec4]
-                  :clj-fn (fn [a b]
-                            [:* a b])}}
-      :main
-      '{gl_Position [multiply u_matrix a_position]
+       :uniforms
+       {u_matrix mat4}
+       :varyings
+       {v_color vec4}
+       :functions
+       {multiply {:ret vec4
+                  :args [mat4 x, vec4 y]
+                  :body [:* x y]}}
+       :main
+       {gl_Position [multiply u_matrix a_position]
         v_color a_color}})
    (iglu->glsl
      '{:type :fragment

@@ -15,12 +15,6 @@
 (s/def ::varyings ::declarations)
 (s/def ::outputs ::declarations)
 
-(s/def ::ret symbol?)
-(s/def ::args (s/coll-of symbol?))
-(s/def ::clj-fn fn?)
-(s/def ::function (s/keys :req-un [::ret ::args ::clj-fn]))
-(s/def ::functions (s/map-of symbol? ::function))
-
 (s/def ::expression (s/cat
                       :fn-name #(or (keyword? %) (symbol? %))
                       :args (s/* ::subexpression)))
@@ -28,6 +22,13 @@
                          :number number?
                          :symbol symbol?
                          :expression ::expression))
+
+(s/def ::ret symbol?)
+(s/def ::args (s/* (s/cat :type symbol? :name symbol?)))
+(s/def ::body ::subexpression)
+(s/def ::function (s/keys :req-un [::ret ::args ::body]))
+(s/def ::functions (s/map-of symbol? ::function))
+
 (s/def ::main (s/map-of symbol? ::subexpression))
 
 (s/def ::shader (s/keys :opt-un [::type

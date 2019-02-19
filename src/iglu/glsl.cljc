@@ -51,20 +51,17 @@
   (when type
     (str "out " type " " name ";")))
 
-(defn ->function [[name {:keys [ret args clj-fn]}]]
-  (let [arg-syms (mapv #(symbol (str "arg" %))
-                   (range (count args)))
-        fn-body (parse/parse-subexpression (apply clj-fn arg-syms))]
-    [(str ret " " name
-       "("
-       (str/join ", "
-         (mapv (fn [arg-type arg-sym]
-                 (str arg-type " " arg-sym))
-           args arg-syms))
-       ")")
-     "{"
-     (str "  return " (->subexpression fn-body) ";")
-     "}"]))
+(defn ->function [[name {:keys [ret args body]}]]
+  [(str ret " " name
+     "("
+     (str/join ", "
+       (mapv (fn [{:keys [type name]}]
+               (str type " " name))
+         args))
+     ")")
+   "{"
+   (str "  return " (->subexpression body) ";")
+   "}"])
 
 ;; compiler fn
 
