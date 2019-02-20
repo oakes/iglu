@@ -13,11 +13,12 @@
        {u_matrix mat4}
        :varyings
        {v_color vec4}
+       :signatures
+       {main ([] void)}
        :functions
-       {main {:ret void
-              :args []
-              :body [[:= gl_Position [:* a_position u_matrix]]
-                     [:= v_color a_color]]}}})
+       {main ([]
+              [:= gl_Position [:* a_position u_matrix]]
+              [:= v_color a_color])}})
    (iglu->glsl
      '{:type :fragment
        :version "300 es"
@@ -26,10 +27,10 @@
        {v_color vec4}
        :outputs
        {outColor vec4}
+       :signatures
+       {main ([] void)}
        :functions
-       {main {:ret void
-              :args []
-              :body [:= outColor v_color]}}})])
+       {main ([] [:= outColor v_color])}})])
 
 (defexample iglu.core/ex-function
   [(iglu->glsl
@@ -42,14 +43,14 @@
        {u_matrix mat4}
        :varyings
        {v_color vec4}
+       :signatures
+       {multiply ([mat4 vec4] vec4)
+        main ([] void)}
        :functions
-       {multiply {:ret vec4
-                  :args [mat4 x, vec4 y]
-                  :body [:* x y]}
-        main {:ret void
-              :args []
-              :body [[:= gl_Position [multiply u_matrix a_position]]
-                     [:= v_color a_color]]}}})
+       {multiply ([x y] [:* x y])
+        main ([]
+              [:= gl_Position [multiply u_matrix a_position]]
+              [:= v_color a_color])}})
    (iglu->glsl
      '{:type :fragment
        :version "300 es"
@@ -58,10 +59,10 @@
        {v_color vec4}
        :outputs
        {outColor vec4}
+       :signatures
+       {main ([] void)}
        :functions
-       {main {:ret void
-              :args []
-              :body [:= outColor v_color]}}})])
+       {main ([] [:= outColor v_color])}})])
 
 (defexample iglu.core/ex-let
   [(iglu->glsl
@@ -83,14 +84,15 @@
         v_normal vec3
         v_surfaceToLight vec3
         v_surfaceToView vec3}
+       :signatures
+       {main ([] void)}
        :functions
-       {main {:ret void
-              :args []
-              :body [[:= v_texCoord a_texCoord]
-                     [:= v_position [:* u_worldViewProjection a_position]]
-                     [:= v_normal [:-xyz [:* u_worldInverseTranspose [:vec4 a_normal 0]]]]
-                     [:= v_surfaceToLight [:-xyz [:- u_lightWorldPos [:* u_world a_position]]]]
-                     [:= gl_Position v_position]]}}})])
+       {main ([]
+              [:= v_texCoord a_texCoord]
+              [:= v_position [:* u_worldViewProjection a_position]]
+              [:= v_normal [:-xyz [:* u_worldInverseTranspose [:vec4 a_normal 0]]]]
+              [:= v_surfaceToLight [:-xyz [:- u_lightWorldPos [:* u_world a_position]]]]
+              [:= gl_Position v_position])}})])
 
 (defn create-canvas [card]
   (let [canvas (doto (js/document.createElement "canvas")

@@ -33,15 +33,6 @@
   (let [{:keys [fn-name args]} expression]
     (str "(" (->function-call fn-name args) ")")))
 
-(defmethod ->subexpression :one-line [[_ line]]
-  (let [{:keys [fn-name args]} line]
-    [(->function-call fn-name args)]))
-
-(defmethod ->subexpression :multi-line [[_ lines]]
-  (mapv (fn [{:keys [fn-name args]}]
-          (->function-call fn-name args))
-    lines))
-
 (defmethod ->subexpression :number [[_ number]]
   (str number))
 
@@ -60,20 +51,29 @@
   (when type
     (str "out " type " " name ";")))
 
-(defn ->function [[name {:keys [ret args body]}]]
-  (let [args-list (str/join ", "
-                    (mapv (fn [{:keys [type name]}]
-                            (str type " " name))
-                      args))
-        body-lines (mapv #(str % ";") (->subexpression body))]
-    [(str ret " " name "(" args-list ")")
-     "{"
-     (if (= 'void ret)
-       body-lines
-       (conj
-         (vec (butlast body-lines))
-         (str "return " (last body-lines))))
-     "}"]))
+(defn ->function [signatures [name {:keys [args body]}]]
+  (if-let [{:keys [in out]} (get signatures name)]
+    (let [_ (when (not= (count in) (count args))
+              (parse/throw-error (str "The function " name " has args signature "
+                                   in " of a different length than its args definition "
+                                   args)))
+          args-list (str/join ", "
+                      (mapv (fn [type name]
+                              (str type " " name))
+                        in args))
+          body-lines (->> body
+                          (mapv (fn [{:keys [fn-name args]}]
+                                  (->function-call fn-name args)))
+                          (mapv #(str % ";")))]
+      [(str out " " name "(" args-list ")")
+       "{"
+       (if (= 'void out)
+         body-lines
+         (conj
+           (vec (butlast body-lines))
+           (str "return " (last body-lines))))
+       "}"])
+    (parse/throw-error (str "Nothing found in :signatures for function " name))))
 
 ;; compiler fn
 
@@ -100,7 +100,7 @@
 
 (defn ->glsl [{:keys [type version precision
                       attributes uniforms varyings
-                      outputs functions fn-deps]
+                      outputs signatures functions fn-deps]
                :as shader}]
   (->> (cond-> []
                version (conj (str "#version " version))
@@ -111,7 +111,8 @@
                                 :vertex (mapv ->out varyings)
                                 :fragment (mapv ->in varyings)))
                outputs (into (mapv ->out outputs))
-               functions (into (mapcat ->function (sort-fns functions fn-deps))))
+               functions (into (mapcat (partial ->function signatures)
+                                 (sort-fns functions fn-deps))))
        (indent 0)
        flatten
        (str/join \newline)))

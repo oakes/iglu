@@ -38,12 +38,11 @@
                          :symbol symbol?
                          :expression ::expression))
 
-(s/def ::ret symbol?)
-(s/def ::args (s/* (s/cat :type symbol? :name symbol?)))
-(s/def ::body (s/or
-                :one-line ::expression
-                :multi-line (s/* (s/spec ::expression))))
-(s/def ::function (s/keys :req-un [::ret ::args ::body]))
+(s/def ::signature (s/cat :in (s/coll-of symbol?) :out symbol?))
+(s/def ::signatures (s/map-of symbol? ::signature))
+
+(s/def ::body (s/+ (s/spec ::expression)))
+(s/def ::function (s/cat :args (s/coll-of symbol?) :body ::body))
 (s/def ::functions (s/map-of symbol? ::function))
 
 (s/def ::shader (s/keys :opt-un [::type
@@ -53,6 +52,7 @@
                                  ::attributes
                                  ::varyings
                                  ::outputs
+                                 ::signatures
                                  ::functions]))
 
 (defn parse [content]
