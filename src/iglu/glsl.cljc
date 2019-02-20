@@ -88,17 +88,30 @@
     []
     content))
 
-(defn ->glsl [{:keys [type version precision attributes uniforms varyings outputs functions] :as shader}]
+(defn sort-fns [functions fn-deps]
+  (->> functions
+       seq
+       (sort-by first
+         (fn [a b]
+           (cond
+             (contains? (fn-deps a) b) 1
+             (contains? (fn-deps b) a) -1
+             :else 0)))))
+
+(defn ->glsl [{:keys [type version precision
+                      attributes uniforms varyings
+                      outputs functions fn-deps]
+               :as shader}]
   (->> (cond-> []
                version (conj (str "#version " version))
                precision (conj (str "precision " precision ";"))
                (= type :vertex) (into (mapv ->in attributes))
-               true (into (mapv ->uniform uniforms))
-               true (into (case type
-                            :vertex (mapv ->out varyings)
-                            :fragment (mapv ->in varyings)))
-               true (into (mapv ->out outputs))
-               true (into (mapcat ->function functions)))
+               uniforms (into (mapv ->uniform uniforms))
+               varyings (into (case type
+                                :vertex (mapv ->out varyings)
+                                :fragment (mapv ->in varyings)))
+               outputs (into (mapv ->out outputs))
+               functions (into (mapcat ->function (sort-fns functions fn-deps))))
        (indent 0)
        flatten
        (str/join \newline)))

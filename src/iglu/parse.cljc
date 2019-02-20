@@ -15,8 +15,23 @@
 (s/def ::varyings ::declarations)
 (s/def ::outputs ::declarations)
 
+(def ^:dynamic *fn-dependencies* nil)
+
+(def ^:dynamic *current-fn* nil)
+
+(defn fn-name? [x]
+  (when (and (symbol? x) *current-fn*)
+    (some-> *fn-dependencies*
+            (swap! (fn [deps]
+                     (when (contains? (deps x) *current-fn*)
+                       (throw-error (str "Cyclic dependency detected between functions "
+                                      *current-fn* " and " x)))
+                     (update deps *current-fn* #(conj (set %) x))))))
+  (or (keyword? x)
+      (symbol? x)))
+
 (s/def ::expression (s/cat
-                      :fn-name #(or (keyword? %) (symbol? %))
+                      :fn-name fn-name?
                       :args (s/* ::subexpression)))
 (s/def ::subexpression (s/or
                          :number number?
@@ -40,15 +55,15 @@
                                  ::outputs
                                  ::functions]))
 
-(defn parse-subexpression [content]
-  (let [res (s/conform ::subexpression content)]
-    (when (= res ::s/invalid)
-      (throw-error (expound/expound-str ::subexpression content)))
-    res))
-
 (defn parse [content]
   (let [parsed-content (s/conform ::shader content)]
     (if (= parsed-content ::s/invalid)
       (throw-error (expound/expound-str ::shader content))
-      parsed-content)))
+      (let [*fn-deps (atom {})]
+        (doseq [[fn-sym {:keys [body]}] (:functions content)]
+          (binding [*fn-dependencies* *fn-deps
+                    *current-fn* fn-sym]
+            (s/conform ::body body)))
+        (assoc parsed-content
+          :fn-deps @*fn-deps)))))
 
