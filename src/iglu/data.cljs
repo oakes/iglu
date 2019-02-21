@@ -137,6 +137,82 @@
       :functions
       {main ([] [:= outColor [:texture u_texture v_texcoord]])}}))
 
+(def balls-3d-vertex-shader-source
+  (c/iglu->glsl
+    '{:type :vertex
+      :version "300 es"
+      :uniforms
+      {u_worldViewProjection mat4
+       u_lightWorldPos vec3
+       u_world mat4
+       u_viewInverse mat4
+       u_worldInverseTranspose mat4}
+      :attributes
+      {a_position vec4
+       a_normal vec3
+       a_texCoord vec2}
+      :varyings
+      {v_position vec4
+       v_texCoord vec2
+       v_normal vec3
+       v_surfaceToLight vec3
+       v_surfaceToView vec3}
+      :signatures
+      {main ([] void)}
+      :functions
+      {main ([]
+             [:= v_texCoord a_texCoord]
+             [:= v_position [:* u_worldViewProjection a_position]]
+             [:= v_normal [:-xyz [:* u_worldInverseTranspose [:vec4 a_normal 0]]]]
+             [:= v_surfaceToLight [:-xyz [:- u_lightWorldPos [:* u_world a_position]]]]
+             [:= gl_Position v_position])}}))
+
+(def balls-3d-fragment-shader-source
+  (c/iglu->glsl
+    '{:type :fragment
+      :precision "mediump float"
+      :uniforms
+      {u_lightColor vec4
+       u_colorMult vec4
+       u_diffuse sampler2D
+       u_specular vec4
+       u_shininess float
+       u_specularFactor float}
+      :varyings
+      {v_position vec4
+       v_texCoord vec2
+       v_normal vec3
+       v_surfaceToLight vec3
+       v_surfaceToView vec3}
+      :outputs
+      {outColor vec4}
+      :signatures
+      {lit ([float float float] vec4)
+       main ([] void)}
+      :functions
+      {lit ([l h m]
+            [:vec4 1 [:abs l]
+             [:? [:> l 0]
+              [:pow [:max 0 h]]
+              0]])
+       main ([]
+             [:=vec4 diffuseColor [:texture u_diffuse v_texCoord]]
+             [:=vec3 a_normal [:normalize v_normal]]
+             [:=vec3 surfaceToLight [:normalize v_surfaceToLight]]
+             [:=vec3 surfaceToView [:normalize v_surfaceToView]]
+             [:=vec3 halfVector [:normalize [:+ surfaceToLight surfaceToView]]]
+             [:=vec4 litR [lit
+                           [:dot a_normal surfaceToLight]
+                           [:dot a_normal halfVector]
+                           u_shininess]]
+             [:= outColor [:vec4
+                           [:* u_lightColor
+                            [:-rgb
+                             [:+
+                              [:* diffuseColor [:-y litR] u_colorMult]
+                              [:* u_speclar [:-z litR] u_speclarFactor]]]]
+                           [:-a diffuseColor]]])}}))
+
 (def rect
   ;; x1 y1, x2 y1, x1 y2, x1 y2, x2 y1, x2 y2
   (array 0 0, 1 0, 0 1, 0 1, 1 0, 1 1))

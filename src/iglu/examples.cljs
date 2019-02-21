@@ -64,36 +64,6 @@
        :functions
        {main ([] [:= outColor v_color])}})])
 
-(defexample iglu.core/ex-let
-  [(iglu->glsl
-     '{:type :vertex
-       :version "300 es"
-       :uniforms
-       {u_worldViewProjection mat4
-        u_lightWorldPos vec3
-        u_world mat4
-        u_viewInverse mat4
-        u_worldInverseTranspose mat4}
-       :attributes
-       {a_position vec4
-        a_normal vec3
-        a_texCoord vec2}
-       :varyings
-       {v_position vec4
-        v_texCoord vec2
-        v_normal vec3
-        v_surfaceToLight vec3
-        v_surfaceToView vec3}
-       :signatures
-       {main ([] void)}
-       :functions
-       {main ([]
-              [:= v_texCoord a_texCoord]
-              [:= v_position [:* u_worldViewProjection a_position]]
-              [:= v_normal [:-xyz [:* u_worldInverseTranspose [:vec4 a_normal 0]]]]
-              [:= v_surfaceToLight [:-xyz [:- u_lightWorldPos [:* u_world a_position]]]]
-              [:= gl_Position v_position])}})])
-
 (defn create-canvas [card]
   (let [canvas (doto (js/document.createElement "canvas")
                  (-> .-style .-width (set! "100%"))
