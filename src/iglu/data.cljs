@@ -191,10 +191,13 @@
        main ([] void)}
       :functions
       {lit ([l h m]
-            [:vec4 1 [:abs l]
+            [:vec4
+             1
+             [:abs l]
              [:? [:> l 0]
-              [:pow [:max 0 h]]
-              0]])
+              [:pow [:max 0 h] m]
+              0]
+             1])
        main ([]
              [:=vec4 diffuseColor [:texture u_diffuse v_texCoord]]
              [:=vec3 a_normal [:normalize v_normal]]
