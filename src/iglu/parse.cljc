@@ -20,15 +20,15 @@
 (def ^:dynamic *current-fn* nil)
 
 (defn fn-name? [x]
-  (when (and (symbol? x) *current-fn*)
-    (some-> *fn-dependencies*
-            (swap! (fn [deps]
-                     (when (contains? (deps x) *current-fn*)
-                       (throw-error (str "Cyclic dependency detected between functions "
-                                      *current-fn* " and " x)))
-                     (update deps *current-fn* #(conj (set %) x))))))
-  (or (keyword? x)
-      (symbol? x)))
+  (when (or (keyword? x) (symbol? x))
+    (when *current-fn*
+      (some-> *fn-dependencies*
+              (swap! (fn [deps]
+                       (when (contains? (deps x) *current-fn*)
+                         (throw-error (str "Cyclic dependency detected between functions "
+                                        *current-fn* " and " x)))
+                       (update deps *current-fn* #(conj (set %) x))))))
+    true))
 
 (s/def ::expression (s/cat
                       :fn-name fn-name?
