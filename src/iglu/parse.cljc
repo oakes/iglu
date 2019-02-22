@@ -20,7 +20,7 @@
 (def ^:dynamic *current-fn* nil)
 
 (defn fn-name? [x]
-  (when (or (keyword? x) (symbol? x))
+  (when (or (keyword? x) (symbol? x) (number? x))
     (when *current-fn*
       (some-> *fn-dependencies*
               (swap! (fn [deps]
@@ -36,6 +36,7 @@
 (s/def ::subexpression (s/or
                          :number number?
                          :symbol symbol?
+                         :string string?
                          :expression ::expression))
 
 (s/def ::signature (s/cat :in (s/coll-of symbol?) :out symbol?))

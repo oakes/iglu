@@ -284,6 +284,13 @@
       0 0 (* (+ near far) range-inv) -1
       0 0 (* near far range-inv 2) 0)))
 
+(defn identity-matrix-3d []
+  (array
+    1 0 0 0
+    0 1 0 0
+    0 0 1 0
+    0 0 0 1))
+
 (defn cross [a b]
   (array
     (- (* (aget a 1) (aget b 2))

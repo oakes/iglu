@@ -7,6 +7,7 @@
 (defmulti ->function-call
   (fn [fn-name args]
     (cond
+      (number? fn-name) ::number
       (= := fn-name) ::assignment
       (-> fn-name name (str/starts-with? "=")) ::local-assignment
       (= :? fn-name) ::inline-conditional
@@ -49,9 +50,14 @@
   (str/join (str " " (name fn-name) " ") (mapv ->subexpression args)))
 
 (defmethod ->function-call ::property [fn-name args]
-  (when (> (count args) 1)
-    (parse/throw-error (str "Too many arguments given to " fn-name)))
+  (when (not= (count args) 1)
+    (parse/throw-error (str fn-name " requires exactly one arg")))
   (str (-> args first ->subexpression) "." (-> fn-name name (subs 1))))
+
+(defmethod ->function-call ::number [fn-name args]
+  (when (not= (count args) 1)
+    (parse/throw-error (str fn-name " requires exactly one arg")))
+  (str (->subexpression (first args)) "[" fn-name "]"))
 
 (defmethod ->function-call :default [fn-name args]
   (str (name fn-name) "(" (str/join ", " (mapv ->subexpression args)) ")"))
@@ -67,6 +73,9 @@
 
 (defmethod ->subexpression :symbol [[_ symbol]]
   (str symbol))
+
+(defmethod ->subexpression :string [[_ string]]
+  string)
 
 ;; var definitions
 
