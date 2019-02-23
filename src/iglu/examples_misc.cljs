@@ -7,13 +7,14 @@
 ;; balls-3d
 
 (defn balls-3d-render [canvas
-                       {:keys [gl program vao cnt objects uniform-setters]
+                       {:keys [gl program vao cnt objects]
                         {:keys [light-world-pos
                                 view-inverse
                                 light-color
                                 world-view-projection
                                 world
                                 world-inverse-transpose
+                                color
                                 specular
                                 shininess
                                 specular-factor]}
@@ -38,41 +39,26 @@
         camera-matrix (ex/look-at camera-pos target up)
         view-matrix (ex/inverse-matrix 4 camera-matrix)
         view-projection-matrix (ex/multiply-matrices 4 view-matrix projection-matrix)]
-    (comment
-      (.uniform3fv gl light-world-pos (array -50 30 100))
-      (.uniformMatrix4fv gl view-inverse false camera-matrix)
-      (.uniform4fv gl light-color (array 1 1 1 1)))
-    (js/twgl.setUniforms uniform-setters
-      (clj->js {:u_lightWorldPos (array -50 30 100)
-                :u_viewInverse camera-matrix
-                :u_lightColor (array 1 1 1 1)}))
+    (.uniform3fv gl light-world-pos (array -50 30 100))
+    (.uniformMatrix4fv gl view-inverse false camera-matrix)
+    (.uniform4fv gl light-color (array 1 1 1 1))
     (doseq [{:keys [radius rx ry mat-uniforms]} objects]
       (let [world-matrix (->> (ex/identity-matrix-3d)
                               (ex/multiply-matrices 4 (ex/x-rotation-matrix-3d (* rx now)))
                               (ex/multiply-matrices 4 (ex/y-rotation-matrix-3d (* ry now)))
                               (ex/multiply-matrices 4 (ex/translation-matrix-3d 0 0 radius)))]
-        (js/twgl.setUniforms uniform-setters
-          (clj->js {:u_worldViewProjection
-                    (->> view-projection-matrix
-                         (ex/multiply-matrices 4 world-matrix))
-                    :u_world world-matrix
-                    :u_worldInverseTranspose
-                    (->> world-matrix
-                         (ex/inverse-matrix 4)
-                         (ex/transpose-matrix-3d))}))
-        (js/twgl.setUniforms uniform-setters
-          (clj->js mat-uniforms))
-        (comment
-          (.uniformMatrix4fv gl world false world-matrix)
-          (.uniformMatrix4fv gl world-view-projection false
-            (->> world-matrix
-                 (ex/multiply-matrices 4 view-projection-matrix)))
-          (.uniformMatrix4fv gl world-inverse-transpose false
-            (->> world-matrix
-                 (ex/inverse-matrix 4)))
-          (.uniform4fv gl specular (:specular mat-uniforms))
-          (.uniform1f gl shininess (:shininess mat-uniforms))
-          (.uniform1f gl specular-factor (:specular-factor mat-uniforms)))
+        (.uniformMatrix4fv gl world false world-matrix)
+        (.uniformMatrix4fv gl world-view-projection false
+          (->> view-projection-matrix
+               (ex/multiply-matrices 4 world-matrix)))
+        (.uniformMatrix4fv gl world-inverse-transpose false
+          (->> world-matrix
+               (ex/inverse-matrix 4)
+               (ex/transpose-matrix-3d)))
+        (.uniform4fv gl color (:u_color mat-uniforms))
+        (.uniform4fv gl specular (:u_specular mat-uniforms))
+        (.uniform1f gl shininess (:u_shininess mat-uniforms))
+        (.uniform1f gl specular-factor (:u_specularFactor mat-uniforms))
         (.drawElements gl gl.TRIANGLES cnt gl.UNSIGNED_SHORT 0))))
   (comment
     (js/requestAnimationFrame #(balls-3d-render canvas props
@@ -85,7 +71,6 @@
                   (array
                     data/balls-3d-vertex-shader-source
                     data/balls-3d-fragment-shader-source))
-        uniform-setters (js/twgl.createUniformSetters gl program)
         attrib-setters (js/twgl.createAttributeSetters gl program)
         attribs (clj->js
                   {:a_position {:buffer buffers.position :numComponents 3}
@@ -102,7 +87,6 @@
                :program program
                :vao vao
                :cnt cnt
-               :uniform-setters uniform-setters
                :uniforms {:light-world-pos (.getUniformLocation gl program "u_lightWorldPos")
                           :view-inverse (.getUniformLocation gl program "u_viewInverse")
                           :light-color (.getUniformLocation gl program "u_lightColor")
