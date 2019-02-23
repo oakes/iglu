@@ -35,19 +35,18 @@
         program (ex/create-program gl
                   data/three-d-vertex-shader-source
                   data/three-d-fragment-shader-source)
-        vao (let [vao (.createVertexArray gl)]
-              (.bindVertexArray gl vao)
-              vao)
+        *buffers (delay
+                   (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
+                     {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
+                   (ex/create-buffer gl program "a_position"
+                     (js/Float32Array. data/f-3d) {:size 3}))
+        vao (ex/create-vao gl *buffers)
         matrix-location (.getUniformLocation gl program "u_matrix")
-        cnt (ex/create-buffer gl program "a_position"
-              (js/Float32Array. data/f-3d) {:size 3})
-        _ (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
-            {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
         props {:gl gl
                :program program
                :vao vao
                :matrix-location matrix-location
-               :cnt cnt}
+               :cnt @*buffers}
         *state (atom {:x 0 :y 0})]
     (events/listen js/window "mousemove"
       (fn [event]
@@ -95,19 +94,18 @@
         program (ex/create-program gl
                   data/three-d-vertex-shader-source
                   data/three-d-fragment-shader-source)
-        vao (let [vao (.createVertexArray gl)]
-              (.bindVertexArray gl vao)
-              vao)
+        *buffers (delay
+                   (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
+                     {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
+                   (ex/create-buffer gl program "a_position"
+                     (js/Float32Array. data/f-3d) {:size 3}))
+        vao (ex/create-vao gl *buffers)
         matrix-location (.getUniformLocation gl program "u_matrix")
-        cnt (ex/create-buffer gl program "a_position"
-              (js/Float32Array. data/f-3d) {:size 3})
-        _ (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
-            {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
         props {:gl gl
                :program program
                :vao vao
                :matrix-location matrix-location
-               :cnt cnt}
+               :cnt @*buffers}
         tx 100
         ty 100
         *state (atom {:tx tx :ty ty :r 0})]
@@ -158,19 +156,18 @@
         program (ex/create-program gl
                   data/three-d-vertex-shader-source
                   data/three-d-fragment-shader-source)
-        vao (let [vao (.createVertexArray gl)]
-              (.bindVertexArray gl vao)
-              vao)
+        *buffers (delay
+                   (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
+                     {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
+                   (ex/create-buffer gl program "a_position"
+                     (js/Float32Array. data/f-3d) {:size 3}))
+        vao (ex/create-vao gl *buffers)
         matrix-location (.getUniformLocation gl program "u_matrix")
-        cnt (ex/create-buffer gl program "a_position"
-              (js/Float32Array. data/f-3d) {:size 3})
-        _ (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
-            {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
         props {:gl gl
                :program program
                :vao vao
                :matrix-location matrix-location
-               :cnt cnt}
+               :cnt @*buffers}
         tx 100
         ty 100
         *state (atom {:tx tx :ty ty :sx 1 :sy 1})]
@@ -219,19 +216,18 @@
         program (ex/create-program gl
                   data/three-d-vertex-shader-source
                   data/three-d-fragment-shader-source)
-        vao (let [vao (.createVertexArray gl)]
-              (.bindVertexArray gl vao)
-              vao)
+        *buffers (delay
+                   (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
+                     {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
+                   (ex/create-buffer gl program "a_position"
+                     (js/Float32Array. data/f-3d) {:size 3}))
+        vao (ex/create-vao gl *buffers)
         matrix-location (.getUniformLocation gl program "u_matrix")
-        cnt (ex/create-buffer gl program "a_position"
-              (js/Float32Array. data/f-3d) {:size 3})
-        _ (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
-            {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
         props {:gl gl
                :program program
                :vao vao
                :matrix-location matrix-location
-               :cnt cnt}
+               :cnt @*buffers}
         *state (atom {:tx 0 :ty 0})]
     (events/listen js/window "mousemove"
       (fn [event]
@@ -287,32 +283,31 @@
         program (ex/create-program gl
                   data/three-d-vertex-shader-source
                   data/three-d-fragment-shader-source)
-        vao (let [vao (.createVertexArray gl)]
-              (.bindVertexArray gl vao)
-              vao)
+        *buffers (delay
+                   (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
+                     {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
+                   (let [positions (js/Float32Array. data/f-3d)
+                         matrix (ex/multiply-matrices 4
+                                  (ex/translation-matrix-3d -50 -75 -15)
+                                  (ex/x-rotation-matrix-3d js/Math.PI))]
+                     (doseq [i (range 0 (.-length positions) 3)]
+                       (let [v (ex/transform-vector matrix
+                                 (array
+                                   (aget positions (+ i 0))
+                                   (aget positions (+ i 1))
+                                   (aget positions (+ i 2))
+                                   1))]
+                         (aset positions (+ i 0) (aget v 0))
+                         (aset positions (+ i 1) (aget v 1))
+                         (aset positions (+ i 2) (aget v 2))))
+                     (ex/create-buffer gl program "a_position" positions {:size 3})))
+        vao (ex/create-vao gl *buffers)
         matrix-location (.getUniformLocation gl program "u_matrix")
-        positions (js/Float32Array. data/f-3d)
-        matrix (ex/multiply-matrices 4
-                 (ex/translation-matrix-3d -50 -75 -15)
-                 (ex/x-rotation-matrix-3d js/Math.PI))
-        _ (doseq [i (range 0 (.-length positions) 3)]
-            (let [v (ex/transform-vector matrix
-                      (array
-                        (aget positions (+ i 0))
-                        (aget positions (+ i 1))
-                        (aget positions (+ i 2))
-                        1))]
-              (aset positions (+ i 0) (aget v 0))
-              (aset positions (+ i 1) (aget v 1))
-              (aset positions (+ i 2) (aget v 2))))
-        cnt (ex/create-buffer gl program "a_position" positions {:size 3})
-        _ (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
-            {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
         props {:gl gl
                :program program
                :vao vao
                :matrix-location matrix-location
-               :cnt cnt}
+               :cnt @*buffers}
         *state (atom {:r 0})]
     (events/listen js/window "mousemove"
       (fn [event]
@@ -375,32 +370,31 @@
         program (ex/create-program gl
                   data/three-d-vertex-shader-source
                   data/three-d-fragment-shader-source)
-        vao (let [vao (.createVertexArray gl)]
-              (.bindVertexArray gl vao)
-              vao)
+        *buffers (delay
+                   (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
+                     {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
+                   (let [positions (js/Float32Array. data/f-3d)
+                         matrix (ex/multiply-matrices 4
+                                  (ex/translation-matrix-3d -50 -75 -15)
+                                  (ex/x-rotation-matrix-3d js/Math.PI))]
+                     (doseq [i (range 0 (.-length positions) 3)]
+                       (let [v (ex/transform-vector matrix
+                                 (array
+                                   (aget positions (+ i 0))
+                                   (aget positions (+ i 1))
+                                   (aget positions (+ i 2))
+                                   1))]
+                         (aset positions (+ i 0) (aget v 0))
+                         (aset positions (+ i 1) (aget v 1))
+                         (aset positions (+ i 2) (aget v 2))))
+                     (ex/create-buffer gl program "a_position" positions {:size 3})))
+        vao (ex/create-vao gl *buffers)
         matrix-location (.getUniformLocation gl program "u_matrix")
-        positions (js/Float32Array. data/f-3d)
-        matrix (ex/multiply-matrices 4
-                 (ex/translation-matrix-3d -50 -75 -15)
-                 (ex/x-rotation-matrix-3d js/Math.PI))
-        _ (doseq [i (range 0 (.-length positions) 3)]
-            (let [v (ex/transform-vector matrix
-                      (array
-                        (aget positions (+ i 0))
-                        (aget positions (+ i 1))
-                        (aget positions (+ i 2))
-                        1))]
-              (aset positions (+ i 0) (aget v 0))
-              (aset positions (+ i 1) (aget v 1))
-              (aset positions (+ i 2) (aget v 2))))
-        cnt (ex/create-buffer gl program "a_position" positions {:size 3})
-        _ (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
-            {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
         props {:gl gl
                :program program
                :vao vao
                :matrix-location matrix-location
-               :cnt cnt}
+               :cnt @*buffers}
         *state (atom {:r 0})]
     (events/listen js/window "mousemove"
       (fn [event]
@@ -451,19 +445,18 @@
         program (ex/create-program gl
                   data/three-d-vertex-shader-source
                   data/three-d-fragment-shader-source)
-        vao (let [vao (.createVertexArray gl)]
-              (.bindVertexArray gl vao)
-              vao)
+        *buffers (delay
+                   (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
+                     {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
+                   (ex/create-buffer gl program "a_position"
+                     (js/Float32Array. data/f-3d) {:size 3}))
+        vao (ex/create-vao gl *buffers)
         matrix-location (.getUniformLocation gl program "u_matrix")
-        cnt (ex/create-buffer gl program "a_position"
-              (js/Float32Array. data/f-3d) {:size 3})
-        _ (ex/create-buffer gl program "a_color" (js/Uint8Array. data/f-3d-colors)
-            {:size 3 :type gl.UNSIGNED_BYTE :normalize true})
         props {:gl gl
                :program program
                :vao vao
                :matrix-location matrix-location
-               :cnt cnt}
+               :cnt @*buffers}
         state {:rx (ex/deg->rad 190)
                :ry (ex/deg->rad 40)
                :rz (ex/deg->rad 320)
@@ -517,32 +510,31 @@
         program (ex/create-program gl
                   data/texture-vertex-shader-source
                   data/texture-fragment-shader-source)
-        vao (let [vao (.createVertexArray gl)]
-              (.bindVertexArray gl vao)
-              vao)
+        *buffers (delay
+                   (ex/create-buffer gl program "a_texcoord"
+                     (js/Float32Array. data/f-texcoords) {:normalize true})
+                   (let [positions (js/Float32Array. data/f-3d)
+                         matrix (ex/multiply-matrices 4
+                                  (ex/translation-matrix-3d -50 -75 -15)
+                                  (ex/x-rotation-matrix-3d js/Math.PI))]
+                     (doseq [i (range 0 (.-length positions) 3)]
+                       (let [v (ex/transform-vector matrix
+                                 (array
+                                   (aget positions (+ i 0))
+                                   (aget positions (+ i 1))
+                                   (aget positions (+ i 2))
+                                   1))]
+                         (aset positions (+ i 0) (aget v 0))
+                         (aset positions (+ i 1) (aget v 1))
+                         (aset positions (+ i 2) (aget v 2))))
+                     (ex/create-buffer gl program "a_position" positions {:size 3})))
+        vao (ex/create-vao gl *buffers)
         matrix-location (.getUniformLocation gl program "u_matrix")
-        matrix (ex/multiply-matrices 4
-                 (ex/translation-matrix-3d -50 -75 -15)
-                 (ex/x-rotation-matrix-3d js/Math.PI))
-        positions (js/Float32Array. data/f-3d)
-        _ (doseq [i (range 0 (.-length positions) 3)]
-            (let [v (ex/transform-vector matrix
-                      (array
-                        (aget positions (+ i 0))
-                        (aget positions (+ i 1))
-                        (aget positions (+ i 2))
-                        1))]
-              (aset positions (+ i 0) (aget v 0))
-              (aset positions (+ i 1) (aget v 1))
-              (aset positions (+ i 2) (aget v 2))))
-        cnt (ex/create-buffer gl program "a_position" positions {:size 3})
-        _ (ex/create-buffer gl program "a_texcoord"
-            (js/Float32Array. data/f-texcoords) {:normalize true})
         props {:gl gl
                :program program
                :vao vao
                :matrix-location matrix-location
-               :cnt cnt}
+               :cnt @*buffers}
         state {:rx (ex/deg->rad 190)
                :ry (ex/deg->rad 40)
                :then 0
@@ -607,22 +599,21 @@
         program (ex/create-program gl
                   data/texture-vertex-shader-source
                   data/texture-fragment-shader-source)
-        vao (let [vao (.createVertexArray gl)]
-              (.bindVertexArray gl vao)
-              vao)
+        *buffers (delay
+                   (ex/create-buffer gl program "a_texcoord"
+                     (js/Float32Array. data/cube-texcoords) {:normalize true})
+                   (let [matrix (ex/multiply-matrices 4
+                                  (ex/translation-matrix-3d -50 -75 -15)
+                                  (ex/x-rotation-matrix-3d js/Math.PI))
+                         positions (js/Float32Array. data/cube)]
+                     (ex/create-buffer gl program "a_position" positions {:size 3})))
+        vao (ex/create-vao gl *buffers)
         matrix-location (.getUniformLocation gl program "u_matrix")
-        matrix (ex/multiply-matrices 4
-                 (ex/translation-matrix-3d -50 -75 -15)
-                 (ex/x-rotation-matrix-3d js/Math.PI))
-        positions (js/Float32Array. data/cube)
-        cnt (ex/create-buffer gl program "a_position" positions {:size 3})
-        _ (ex/create-buffer gl program "a_texcoord"
-            (js/Float32Array. data/cube-texcoords) {:normalize true})
         props {:gl gl
                :program program
                :vao vao
                :matrix-location matrix-location
-               :cnt cnt}
+               :cnt @*buffers}
         state {:rx (ex/deg->rad 190)
                :ry (ex/deg->rad 40)
                :then 0
@@ -700,22 +691,21 @@
         program (ex/create-program gl
                   data/texture-vertex-shader-source
                   data/texture-fragment-shader-source)
-        vao (let [vao (.createVertexArray gl)]
-              (.bindVertexArray gl vao)
-              vao)
+        *buffers (delay
+                   (ex/create-buffer gl program "a_texcoord"
+                     (js/Float32Array. data/cube-texcoords) {:normalize true})
+                   (let [matrix (ex/multiply-matrices 4
+                                  (ex/translation-matrix-3d -50 -75 -15)
+                                  (ex/x-rotation-matrix-3d js/Math.PI))
+                         positions (js/Float32Array. data/cube)]
+                     (ex/create-buffer gl program "a_position" positions {:size 3})))
+        vao (ex/create-vao gl *buffers)
         matrix-location (.getUniformLocation gl program "u_matrix")
-        matrix (ex/multiply-matrices 4
-                 (ex/translation-matrix-3d -50 -75 -15)
-                 (ex/x-rotation-matrix-3d js/Math.PI))
-        positions (js/Float32Array. data/cube)
-        cnt (ex/create-buffer gl program "a_position" positions {:size 3})
-        _ (ex/create-buffer gl program "a_texcoord"
-            (js/Float32Array. data/cube-texcoords) {:normalize true})
         props {:gl gl
                :program program
                :vao vao
                :matrix-location matrix-location
-               :cnt cnt}
+               :cnt @*buffers}
         state {:rx (ex/deg->rad 190)
                :ry (ex/deg->rad 40)
                :then 0

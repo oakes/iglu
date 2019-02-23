@@ -124,12 +124,13 @@
 (defn create-index-buffer [gl indices]
   (let [index-buffer (.createBuffer gl)]
     (.bindBuffer gl gl.ELEMENT_ARRAY_BUFFER index-buffer)
-    (.bufferData gl gl.ELEMENT_ARRAY_BUFFER indices gl.STATIC_DRAW)))
+    (.bufferData gl gl.ELEMENT_ARRAY_BUFFER indices gl.STATIC_DRAW)
+    (.-length indices)))
 
-(defn create-vao [gl create-buffers-fn]
+(defn create-vao [gl *create-buffers]
    (let [vao (.createVertexArray gl)]
      (.bindVertexArray gl vao)
-     (create-buffers-fn)
+     @*create-buffers
      (.bindVertexArray gl nil)
      vao))
 

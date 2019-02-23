@@ -11,12 +11,12 @@
         program (ex/create-program gl
                   data/two-d-vertex-shader-source
                   data/two-d-fragment-shader-source)
-        vao (let [vao (.createVertexArray gl)]
-              (.bindVertexArray gl vao)
-              vao)
+        *buffers (delay
+                   (ex/create-buffer gl program "a_position" (js/Float32Array. data/rect)))
+        vao (ex/create-vao gl *buffers)
         matrix-location (.getUniformLocation gl program "u_matrix")
         color-location (.getUniformLocation gl program "u_color")
-        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/rect))]
+        cnt @*buffers]
     (ex/resize-canvas canvas)
     (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
     (.clearColor gl 0 0 0 0)
@@ -43,13 +43,13 @@
         program (ex/create-program gl
                   data/image-vertex-shader-source
                   data/image-fragment-shader-source)
-        vao (let [vao (.createVertexArray gl)]
-              (.bindVertexArray gl vao)
-              vao)
+        *buffers (delay
+                   (ex/create-buffer gl program "a_position" (js/Float32Array. data/rect)))
+        vao (ex/create-vao gl *buffers)
         matrix-location (.getUniformLocation gl program "u_matrix")
         image-location (.getUniformLocation gl program "u_image")
         texture-unit 0
-        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/rect))]
+        cnt @*buffers]
     (let [texture (.createTexture gl)]
       (.activeTexture gl (+ gl.TEXTURE0 texture-unit))
       (.bindTexture gl gl.TEXTURE_2D texture)
@@ -106,18 +106,17 @@
         program (ex/create-program gl
                   data/two-d-vertex-shader-source
                   data/two-d-fragment-shader-source)
-        vao (let [vao (.createVertexArray gl)]
-              (.bindVertexArray gl vao)
-              vao)
+        *buffers (delay
+                   (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-2d)))
+        vao (ex/create-vao gl *buffers)
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")
-        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-2d))
         props {:gl gl
                :program program
                :vao vao
                :color-location color-location
                :matrix-location matrix-location
-               :cnt cnt}
+               :cnt @*buffers}
         *state (atom {:x 0 :y 0})]
     (events/listen js/window "mousemove"
       (fn [event]
@@ -157,18 +156,17 @@
         program (ex/create-program gl
                   data/two-d-vertex-shader-source
                   data/two-d-fragment-shader-source)
-        vao (let [vao (.createVertexArray gl)]
-              (.bindVertexArray gl vao)
-              vao)
+        *buffers (delay
+                   (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-2d)))
+        vao (ex/create-vao gl *buffers)
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")
-        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-2d))
         props {:gl gl
                :program program
                :vao vao
                :color-location color-location
                :matrix-location matrix-location
-               :cnt cnt}
+               :cnt @*buffers}
         tx 100
         ty 100
         *state (atom {:tx tx :ty ty :r 0})]
@@ -211,18 +209,17 @@
         program (ex/create-program gl
                   data/two-d-vertex-shader-source
                   data/two-d-fragment-shader-source)
-        vao (let [vao (.createVertexArray gl)]
-              (.bindVertexArray gl vao)
-              vao)
+        *buffers (delay
+                   (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-2d)))
+        vao (ex/create-vao gl *buffers)
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")
-        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-2d))
         props {:gl gl
                :program program
                :vao vao
                :color-location color-location
                :matrix-location matrix-location
-               :cnt cnt}
+               :cnt @*buffers}
         tx 100
         ty 100
         *state (atom {:tx tx :ty ty :sx 1 :sy 1})]
@@ -268,18 +265,17 @@
         program (ex/create-program gl
                   data/two-d-vertex-shader-source
                   data/two-d-fragment-shader-source)
-        vao (let [vao (.createVertexArray gl)]
-              (.bindVertexArray gl vao)
-              vao)
+        *buffers (delay
+                   (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-2d)))
+        vao (ex/create-vao gl *buffers)
         color-location (.getUniformLocation gl program "u_color")
         matrix-location (.getUniformLocation gl program "u_matrix")
-        cnt (ex/create-buffer gl program "a_position" (js/Float32Array. data/f-2d))
         props {:gl gl
                :program program
                :vao vao
                :color-location color-location
                :matrix-location matrix-location
-               :cnt cnt}
+               :cnt @*buffers}
         tx 100
         ty 100
         *state (atom {:tx tx :ty ty :r 0})]

@@ -71,16 +71,16 @@
                   (array
                     data/balls-3d-vertex-shader-source
                     data/balls-3d-fragment-shader-source))
-        vao (ex/create-vao gl
-              (fn []
-                (ex/create-buffer gl program "a_position" vertices.position {:size 3})
-                (ex/create-buffer gl program "a_normal" vertices.normal {:size 3})
-                (ex/create-buffer gl program "a_texCoord" vertices.texcoord {:size 2})
-                (ex/create-index-buffer gl vertices.indices)))
+        *buffers (delay
+                   (ex/create-buffer gl program "a_position" vertices.position {:size 3})
+                   (ex/create-buffer gl program "a_normal" vertices.normal {:size 3})
+                   (ex/create-buffer gl program "a_texCoord" vertices.texcoord {:size 2})
+                   (ex/create-index-buffer gl vertices.indices))
+        vao (ex/create-vao gl *buffers)
         props {:gl gl
                :program program
                :vao vao
-               :cnt 6912
+               :cnt @*buffers
                :uniforms {:light-world-pos (.getUniformLocation gl program "u_lightWorldPos")
                           :view-inverse (.getUniformLocation gl program "u_viewInverse")
                           :light-color (.getUniformLocation gl program "u_lightColor")
