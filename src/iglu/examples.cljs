@@ -304,6 +304,13 @@
     0 0 1 0
     0 0 0 1))
 
+(defn transpose-matrix-3d [m]
+  (array
+    (aget m 0) (aget m 4) (aget m 8) (aget m 12)
+    (aget m 1) (aget m 5) (aget m 9) (aget m 13)
+    (aget m 2) (aget m 6) (aget m 10) (aget m 14)
+    (aget m 3) (aget m 7) (aget m 11) (aget m 15)))
+
 (defn cross [a b]
   (array
     (- (* (aget a 1) (aget b 2))

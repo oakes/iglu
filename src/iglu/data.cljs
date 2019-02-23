@@ -149,11 +149,11 @@
        u_worldInverseTranspose mat4}
       :attributes
       {a_position vec4
-       a_normal vec3}
-       ;a_texCoord vec2}
+       a_normal vec3
+       a_texCoord vec2}
       :varyings
       {v_position vec4
-       ;v_texCoord vec2
+       v_texCoord vec2
        v_normal vec3
        v_surfaceToLight vec3
        v_surfaceToView vec3}
@@ -161,7 +161,7 @@
       {main ([] void)}
       :functions
       {main ([]
-             ;[:= v_texCoord a_texCoord]
+             [:= v_texCoord a_texCoord]
              [:= v_position [:* u_worldViewProjection a_position]]
              [:= v_normal [:-xyz [:* u_worldInverseTranspose [:vec4 a_normal 0]]]]
              [:= v_surfaceToLight [:- u_lightWorldPos [:-xyz [:* u_world a_position]]]]
@@ -175,14 +175,13 @@
       :precision "mediump float"
       :uniforms
       {u_lightColor vec4
-       ;u_colorMult vec4
-       ;u_diffuse sampler2D
+       u_color vec4
        u_specular vec4
        u_shininess float
        u_specularFactor float}
       :varyings
       {v_position vec4
-       ;v_texCoord vec2
+       v_texCoord vec2
        v_normal vec3
        v_surfaceToLight vec3
        v_surfaceToView vec3}
@@ -201,7 +200,6 @@
               "0.0"]
              "1.0"])
        main ([]
-             ;[:=vec4 diffuseColor [:texture u_diffuse v_texCoord]]
              [:=vec3 a_normal [:normalize v_normal]]
              [:=vec3 surfaceToLight [:normalize v_surfaceToLight]]
              [:=vec3 surfaceToView [:normalize v_surfaceToView]]
@@ -210,15 +208,14 @@
                            [:dot a_normal surfaceToLight]
                            [:dot a_normal halfVector]
                            u_shininess]]
-             [:= outColor [:vec4 1 0 0.5 1]
-              #_
+             [:= outColor
               [:vec4
-               [:* u_lightColor
-                [:-rgb
+               [:-rgb
+                [:* u_lightColor
                  [:+
-                  [:* diffuseColor [:-y litR] u_colorMult]
-                  [:* u_speclar [:-z litR] u_speclarFactor]]]]
-               [:-a diffuseColor]]])}}))
+                  [:* [:-y litR] u_color]
+                  [:* u_specular [:-z litR] u_specularFactor]]]]
+               1]])}}))
 
 (def rect
   ;; x1 y1, x2 y1, x1 y2, x1 y2, x2 y1, x2 y2
