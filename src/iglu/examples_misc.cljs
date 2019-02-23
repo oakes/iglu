@@ -60,9 +60,8 @@
         (.uniform1f gl shininess (:u_shininess mat-uniforms))
         (.uniform1f gl specular-factor (:u_specularFactor mat-uniforms))
         (.drawElements gl gl.TRIANGLES cnt gl.UNSIGNED_SHORT 0))))
-  (comment
-    (js/requestAnimationFrame #(balls-3d-render canvas props
-                                 (assoc state :then now :now (* % 0.001))))))
+  (js/requestAnimationFrame #(balls-3d-render canvas props
+                               (assoc state :then now :now (* % 0.0001)))))
 
 (defn balls-3d-init [canvas]
   (let [gl (.getContext canvas "webgl2")
@@ -95,14 +94,14 @@
                           :shininess (.getUniformLocation gl program "u_shininess")
                           :specular-factor (.getUniformLocation gl program "u_specularFactor")}
                :objects (vec
-                          (for [i (range 1)]
-                            {:radius 50 ;(rand 150)
-                             :rx 0 ;(rand (* 2 js/Math.PI))
-                             :ry 0 ;(rand js/Math.PI)
+                          (for [i (range 100)]
+                            {:radius (rand 150)
+                             :rx (rand (* 2 js/Math.PI))
+                             :ry (rand js/Math.PI)
                              :mat-uniforms {:u_color (array (rand) (rand) (rand) 1)
                                             :u_specular        (array 1, 1, 1, 1)
-                                            :u_shininess       100 ;(rand 500)
-                                            :u_specularFactor  0.5 #_(rand 1)}}))}
+                                            :u_shininess       (rand 500)
+                                            :u_specularFactor  (rand 1)}}))}
         state {:then 0
                :now 0}]
     (balls-3d-render canvas props state)))
