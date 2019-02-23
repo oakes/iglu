@@ -55,7 +55,7 @@
         (.uniform4fv gl specular (:specular mat-uniforms))
         (.uniform1f gl shininess (:shininess mat-uniforms))
         (.uniform1f gl specular-factor (:specular-factor mat-uniforms))
-        (.drawElements gl gl.TRIANGLES 6912 gl.UNSIGNED_SHORT 0))))
+        (.drawElements gl gl.TRIANGLES cnt gl.UNSIGNED_SHORT 0))))
   #_
   (js/requestAnimationFrame #(balls-3d-render canvas props
                                (-> state
@@ -67,9 +67,7 @@
         program (ex/create-program gl
                   data/balls-3d-vertex-shader-source
                   data/balls-3d-fragment-shader-source)
-        vao (let [vao (.createVertexArray gl)]
-              (.bindVertexArray gl vao)
-              vao)
+        vao (ex/create-vao gl vertices.indices)
         cnt (ex/create-buffer gl program "a_position" vertices.position {:size 3})
         _ (ex/create-buffer gl program "a_normal" vertices.normal {:size 3})
         ;_ (ex/create-buffer gl program "a_texcoord" vertices.texcoord {:size 2})
