@@ -66,27 +66,21 @@
 
 (defn balls-3d-init [canvas]
   (let [gl (.getContext canvas "webgl2")
-        buffers (js/twgl.primitives.createSphereBuffers gl 10 48 24)
+        vertices (js/twgl.primitives.createSphereVertices 10 48 24)
         program (js/twgl.createProgramFromSources gl
                   (array
                     data/balls-3d-vertex-shader-source
                     data/balls-3d-fragment-shader-source))
-        attrib-setters (js/twgl.createAttributeSetters gl program)
-        attribs (clj->js
-                  {:a_position {:buffer buffers.position :numComponents 3}
-                   :a_normal {:buffer buffers.normal :numComponents 3}
-                   :a_texcoord {:buffer buffers.texcoord :numComponents 2}})
-        vao (js/twgl.createVAOAndSetAttributes
-              gl attrib-setters attribs buffers.indices)
-        ;vao (ex/create-vao gl vertices.indices)
-        ;cnt (ex/create-buffer gl program "a_position" vertices.position {:size 3})
-        ;_ (ex/create-buffer gl program "a_normal" vertices.normal {:size 3})
-        ;_ (ex/create-buffer gl program "a_texcoord" vertices.texcoord {:size 2})
-        cnt buffers.numElements
+        vao (ex/create-vao gl
+              (fn []
+                (ex/create-buffer gl program "a_position" vertices.position {:size 3})
+                (ex/create-buffer gl program "a_normal" vertices.normal {:size 3})
+                (ex/create-buffer gl program "a_texCoord" vertices.texcoord {:size 2})
+                (ex/create-index-buffer gl vertices.indices)))
         props {:gl gl
                :program program
                :vao vao
-               :cnt cnt
+               :cnt 6912
                :uniforms {:light-world-pos (.getUniformLocation gl program "u_lightWorldPos")
                           :view-inverse (.getUniformLocation gl program "u_viewInverse")
                           :light-color (.getUniformLocation gl program "u_lightColor")

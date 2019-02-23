@@ -121,18 +121,17 @@
      (.bufferData gl gl.ARRAY_BUFFER src-data gl.STATIC_DRAW)
      (/ (.-length src-data) size))))
 
-(defn create-vao
-  ([gl]
-   (create-vao gl nil))
-  ([gl indices]
+(defn create-index-buffer [gl indices]
+  (let [index-buffer (.createBuffer gl)]
+    (.bindBuffer gl gl.ELEMENT_ARRAY_BUFFER index-buffer)
+    (.bufferData gl gl.ELEMENT_ARRAY_BUFFER indices gl.STATIC_DRAW)))
+
+(defn create-vao [gl create-buffers-fn]
    (let [vao (.createVertexArray gl)]
      (.bindVertexArray gl vao)
-     (when indices
-       (let [index-buffer (.createBuffer gl)]
-         (.bindBuffer gl gl.ELEMENT_ARRAY_BUFFER index-buffer)
-         (.bufferData gl gl.ELEMENT_ARRAY_BUFFER indices gl.STATIC_DRAW)))
-     ;(.bindVertexArray gl nil)
-     vao)))
+     (create-buffers-fn)
+     (.bindVertexArray gl nil)
+     vao))
 
 (defn multiply-matrices [size m1 m2]
   (let [m1 (mapv vec (partition size m1))
