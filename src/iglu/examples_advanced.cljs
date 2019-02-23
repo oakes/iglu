@@ -1,4 +1,4 @@
-(ns iglu.examples-misc
+(ns iglu.examples-advanced
   (:require [iglu.examples :as ex]
             [goog.events :as events]
             [iglu.data :as data]
@@ -106,8 +106,8 @@
                :now 0}]
     (balls-3d-render canvas props state)))
 
-(defexample iglu.core/balls-3d
+(defexample iglu.examples-advanced/balls-3d
   {:with-card card}
   (->> (iglu.examples/create-canvas card)
-       (iglu.examples-misc/balls-3d-init)))
+       (iglu.examples-advanced/balls-3d-init)))
 

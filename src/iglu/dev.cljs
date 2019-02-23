@@ -2,5 +2,5 @@
   (:require iglu.examples
             iglu.examples-2d
             iglu.examples-3d
-            iglu.examples-misc
+            iglu.examples-advanced
             dynadoc.core))

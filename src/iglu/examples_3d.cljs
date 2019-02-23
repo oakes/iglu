@@ -56,7 +56,7 @@
           (translation-3d-render canvas props (swap! *state assoc :x x :y y)))))
     (translation-3d-render canvas props @*state)))
 
-(defexample iglu.core/translation-3d
+(defexample iglu.examples-3d/translation-3d
   {:with-card card}
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-3d/translation-3d-init)))
@@ -119,7 +119,7 @@
           (rotation-3d-render canvas props (swap! *state assoc :r (Math/atan2 rx ry))))))
     (rotation-3d-render canvas props @*state)))
 
-(defexample iglu.core/rotation-3d
+(defexample iglu.examples-3d/rotation-3d
   {:with-card card}
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-3d/rotation-3d-init)))
@@ -181,7 +181,7 @@
           (scale-3d-render canvas props (swap! *state assoc :sx sx :sy sy)))))
     (scale-3d-render canvas props @*state)))
 
-(defexample iglu.core/scale-3d
+(defexample iglu.examples-3d/scale-3d
   {:with-card card}
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-3d/scale-3d-init)))
@@ -238,7 +238,7 @@
           (perspective-3d-render canvas props (swap! *state assoc :tx x :ty y)))))
     (perspective-3d-render canvas props @*state)))
 
-(defexample iglu.core/perspective-3d
+(defexample iglu.examples-3d/perspective-3d
   {:with-card card}
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-3d/perspective-3d-init)))
@@ -318,7 +318,7 @@
             (swap! *state assoc :r (-> r (* 360) ex/deg->rad))))))
     (perspective-camera-3d-render canvas props @*state)))
 
-(defexample iglu.core/perspective-camera-3d
+(defexample iglu.examples-3d/perspective-camera-3d
   {:with-card card}
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-3d/perspective-camera-3d-init)))
@@ -405,7 +405,7 @@
             (swap! *state assoc :r (-> r (* 360) ex/deg->rad))))))
     (perspective-camera-target-3d-render canvas props @*state)))
 
-(defexample iglu.core/perspective-camera-target-3d
+(defexample iglu.examples-3d/perspective-camera-target-3d
   {:with-card card}
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-3d/perspective-camera-target-3d-init)))
@@ -464,7 +464,7 @@
                :now 0}]
     (perspective-animation-3d-render canvas props state)))
 
-(defexample iglu.core/perspective-animation-3d
+(defexample iglu.examples-3d/perspective-animation-3d
   {:with-card card}
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-3d/perspective-animation-3d-init)))
@@ -553,7 +553,7 @@
       (-> .-onload (set! (fn []
                            (perspective-texture-3d-init canvas image)))))))
 
-(defexample iglu.core/perspective-texture-3d
+(defexample iglu.examples-3d/perspective-texture-3d
   {:with-card card}
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-3d/perspective-texture-3d-load)))
@@ -632,7 +632,7 @@
         (.texParameteri gl gl.TEXTURE_2D gl.TEXTURE_WRAP_T gl.CLAMP_TO_EDGE))
       (perspective-texture-data-3d-render canvas props state)))
 
-(defexample iglu.core/perspective-texture-data-3d
+(defexample iglu.examples-3d/perspective-texture-data-3d
   {:with-card card}
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-3d/perspective-texture-data-3d-init)))
@@ -748,7 +748,7 @@
                                                :color [1 1 1 1]}])]
             (perspective-texture-meta-3d-render canvas props state)))))))
 
-(defexample iglu.core/perspective-texture-meta-3d
+(defexample iglu.examples-3d/perspective-texture-meta-3d
   {:with-card card}
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-3d/perspective-texture-meta-3d-init)))

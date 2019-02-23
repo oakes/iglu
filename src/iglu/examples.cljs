@@ -2,7 +2,7 @@
   (:require [iglu.core])
   (:require-macros [dynadoc.example :refer [defexample]]))
 
-(defexample iglu.core/ex-basic
+(defexample iglu.examples/ex-basic
   [(iglu->glsl
      '{:type :vertex
        :version "300 es"
@@ -32,7 +32,7 @@
        :functions
        {main ([] [:= outColor v_color])}})])
 
-(defexample iglu.core/ex-function
+(defexample iglu.examples/ex-function
   [(iglu->glsl
      '{:type :vertex
        :version "300 es"

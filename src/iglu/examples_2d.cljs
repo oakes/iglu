@@ -31,7 +31,7 @@
              (ex/multiply-matrices 3 (ex/scaling-matrix (rand-int 300) (rand-int 300)))))
       (.drawArrays gl gl.TRIANGLES 0 cnt))))
 
-(defexample iglu.core/rand-rects
+(defexample iglu.examples-2d/rand-rects
   {:with-card card}
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-2d/rand-rects-init)))
@@ -79,7 +79,7 @@
       (-> .-onload (set! (fn []
                            (image-init canvas image)))))))
 
-(defexample iglu.core/image
+(defexample iglu.examples-2d/image
   {:with-card card}
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-2d/image-load)))
@@ -126,7 +126,7 @@
           (translation-render canvas props (swap! *state assoc :x x :y y)))))
     (translation-render canvas props @*state)))
 
-(defexample iglu.core/translation
+(defexample iglu.examples-2d/translation
   {:with-card card}
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-2d/translation-init)))
@@ -180,7 +180,7 @@
           (rotation-render canvas props (swap! *state assoc :r (Math/atan2 rx ry))))))
     (rotation-render canvas props @*state)))
 
-(defexample iglu.core/rotation
+(defexample iglu.examples-2d/rotation
   {:with-card card}
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-2d/rotation-init)))
@@ -233,7 +233,7 @@
           (scale-render canvas props (swap! *state assoc :sx sx :sy sy)))))
     (scale-render canvas props @*state)))
 
-(defexample iglu.core/scale
+(defexample iglu.examples-2d/scale
   {:with-card card}
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-2d/scale-init)))
@@ -289,7 +289,7 @@
           (rotation-multi-render canvas props (swap! *state assoc :r (Math/atan2 rx ry))))))
     (rotation-multi-render canvas props @*state)))
 
-(defexample iglu.core/rotation-multi
+(defexample iglu.examples-2d/rotation-multi
   {:with-card card}
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-2d/rotation-multi-init)))
