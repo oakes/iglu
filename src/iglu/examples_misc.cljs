@@ -1,7 +1,8 @@
 (ns iglu.examples-misc
   (:require [iglu.examples :as ex]
             [goog.events :as events]
-            [iglu.data :as data])
+            [iglu.data :as data]
+            [iglu.primitives :as primitives])
   (:require-macros [dynadoc.example :refer [defexample]]))
 
 ;; balls-3d
@@ -21,8 +22,7 @@
                         :uniforms
                         :as props}
                        {:keys [then now] :as state}]
-  ;(ex/resize-canvas canvas)
-  (js/twgl.resizeCanvasToDisplaySize gl.canvas)
+  (ex/resize-canvas canvas)
   (.viewport gl 0 0 gl.canvas.width gl.canvas.height)
   (.enable gl gl.CULL_FACE)
   (.enable gl gl.DEPTH_TEST)
@@ -66,16 +66,19 @@
 
 (defn balls-3d-init [canvas]
   (let [gl (.getContext canvas "webgl2")
-        vertices (js/twgl.primitives.createSphereVertices 10 48 24)
-        program (js/twgl.createProgramFromSources gl
-                  (array
-                    data/balls-3d-vertex-shader-source
-                    data/balls-3d-fragment-shader-source))
+        {:keys [positions normals texcoords indices]} (primitives/sphere 10 48 24)
+        program (ex/create-program gl
+                  data/balls-3d-vertex-shader-source
+                  data/balls-3d-fragment-shader-source)
         *buffers (delay
-                   (ex/create-buffer gl program "a_position" vertices.position {:size 3})
-                   (ex/create-buffer gl program "a_normal" vertices.normal {:size 3})
-                   (ex/create-buffer gl program "a_texCoord" vertices.texcoord {:size 2})
-                   (ex/create-index-buffer gl vertices.indices))
+                   (ex/create-buffer gl program "a_position"
+                     (-> positions clj->js js/Float32Array.) {:size 3})
+                   (ex/create-buffer gl program "a_normal"
+                     (-> normals clj->js js/Float32Array.) {:size 3})
+                   (ex/create-buffer gl program "a_texCoord"
+                     (-> texcoords clj->js js/Float32Array.) {:size 2})
+                   (ex/create-index-buffer gl
+                     (-> indices clj->js js/Uint16Array.)))
         vao (ex/create-vao gl *buffers)
         props {:gl gl
                :program program
