@@ -1,10 +1,65 @@
 (ns iglu.primitives
-  (:require [clojure.spec.alpha :as s]))
+  (:require [clojure.spec.alpha :as s]
+            [iglu.examples :as ex]))
+
+(defn plane [{:keys [width depth subdivisions-width subdivisions-depth]
+              :or {width 1 depth 1
+                   subdivisions-width 1 subdivisions-depth 1}}]
+  (let [num-verts-across (inc subdivisions-width)]
+    (-> (fn [m z]
+          (reduce
+            (fn [m x]
+              (let [u (/ x subdivisions-width)
+                    v (/ z subdivisions-depth)]
+                (-> m
+                    (update :positions (fn [positions]
+                                         (-> positions
+                                             (conj! (- (* width u) (* width 0.5)))
+                                             (conj! 0)
+                                             (conj! (- (* depth v) (* depth 0.5))))))
+                    (update :normals (fn [normals]
+                                       (-> normals
+                                           (conj! 0)
+                                           (conj! 1)
+                                           (conj! 0))))
+                    (update :texcoords (fn [texcoords]
+                                         (-> texcoords
+                                             (conj! u)
+                                             (conj! v)))))))
+            m
+            (range (inc subdivisions-width))))
+        (reduce
+          {:positions (transient [])
+           :normals (transient [])
+           :texcoords (transient [])}
+          (range (inc subdivisions-depth)))
+        (update :positions persistent!)
+        (update :normals persistent!)
+        (update :texcoords persistent!)
+        (assoc :indices
+          (persistent!
+            (reduce
+              (fn [indices z]
+                (reduce
+                  (fn [indices x]
+                    (-> indices
+                        ;; triangle 1
+                        (conj! (-> z (* num-verts-across) (+ x)))
+                        (conj! (-> z inc (* num-verts-across) (+ x)))
+                        (conj! (-> z (* num-verts-across) (+ (inc x))))
+                        ;; triangle 2
+                        (conj! (-> z inc (* num-verts-across) (+ x)))
+                        (conj! (-> z inc (* num-verts-across) (+ (inc x))))
+                        (conj! (-> z (* num-verts-across) (+ (inc x))))))
+                  indices
+                  (range subdivisions-width)))
+              (transient [])
+              (range subdivisions-depth)))))))
 
 (s/fdef sphere
   :args (s/cat :radius number? :axis pos? :height pos?))
 
-(defn sphere [radius subdivisions-axis subdivisions-height]
+(defn sphere [{:keys [radius subdivisions-axis subdivisions-height]}]
   (let [start-latitude 0
         end-latitude js/Math.PI
         start-longitude 0
