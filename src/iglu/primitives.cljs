@@ -315,3 +315,95 @@
         (update :texcoords persistent!)
         (update :indices persistent!))))
 
+(s/def ::vertical-radius number?)
+(s/def ::outer-radius number?)
+(s/def ::thickness number?)
+(s/def ::subdivisions-down pos?)
+(s/def ::start-offset number?)
+(s/def ::end-offset number?)
+(s/fdef cresent
+  :args (s/cat :props (s/keys
+                        :req-un [::vertical-radius ::outer-radius ::inner-radius
+                                 ::thickness ::subdivisions-down]
+                        :opt-un [::start-offset ::end-offset])))
+
+(defn crescent [{:keys [vertical-radius outer-radius inner-radius thickness
+                        subdivisions-down start-offset end-offset]
+                 :or {start-offset 0 end-offset 1}}]
+  (let [subdivisions-thick 2
+        offset-range (- end-offset start-offset)
+        num-vertices (-> (inc subdivisions-down) (* 2) (* (+ 2 subdivisions-thick)))
+        lerp (fn [a b s]
+               (-> a (+ (- b a)) (* s)))
+        create-arc (fn [m arc-radius x normal-mult normal-add u-mult u-add]
+                     (reduce
+                       (fn [m z]
+                         (let [u-back (/ x (dec subdivisions-thick))
+                               v (/ z subdivisions-down)
+                               x-back (* (- u-back 0.5) 2)
+                               angle (-> (* v offset-range) (+ start-offset) (* js/Math.PI))
+                               s (js/Math.sin angle)
+                               c (js/Math.cos angle)
+                               radius (lerp vertical-radius arc-radius s)
+                               px (* x-back thickness)
+                               py (* c vertical-radius)
+                               pz (* s radius)
+                               [nx ny nz] (->> [0 s c]
+                                               (mapv * normal-mult)
+                                               (mapv + normal-add))]
+                           (-> m
+                               (update :positions (fn [positions]
+                                                    (-> positions
+                                                        (conj! px)
+                                                        (conj! py)
+                                                        (conj! pz))))
+                               (update :normals (fn [normals]
+                                                  (-> normals
+                                                      (conj! nx)
+                                                      (conj! ny)
+                                                      (conj! nz))))
+                               (update :texcoords (fn [texcoords]
+                                                    (-> texcoords
+                                                        (conj! (+ (* u-back u-mult) u-add))
+                                                        (conj! v)))))))
+                       m
+                       (range (inc subdivisions-down))))
+        num-vertices-down (inc subdivisions-down)
+        create-surface (fn [m left-arc-offset right-arc-offset]
+                         (update m :indices
+                           (fn [indices]
+                             (reduce
+                               (fn [indices z]
+                                 (-> indices
+                                     ;; triangle 1
+                                     (conj! (+ left-arc-offset z 0))
+                                     (conj! (+ left-arc-offset z 1))
+                                     (conj! (+ right-arc-offset z 0))
+                                     ;; triangle 2
+                                     (conj! (+ left-arc-offset z 1))
+                                     (conj! (+ right-arc-offset z 1))
+                                     (conj! (+ right-arc-offset z 0))))
+                               indices
+                               (range subdivisions-down)))))]
+    (-> (fn [m x]
+          (let [u-back (-> x (/ (dec subdivisions-thick)) (- 0.5) (* 2))]
+            (-> m
+                (create-arc outer-radius x [1 1 1] [0 0 0] 1 0)
+                (create-arc outer-radius x [0 0 0] [u-back 0 0] 0 0)
+                (create-arc inner-radius x [1 1 1] [0 0 0] 1 0)
+                (create-arc inner-radius x [0 0 0] [u-back 0 0] 0 1))))
+        (reduce
+          {:positions (transient [])
+           :normals (transient [])
+           :texcoords (transient [])
+           :indices (transient [])}
+          (range subdivisions-thick))
+        (create-surface (* num-vertices-down 0) (* num-vertices-down 4)) ;; front
+        (create-surface (* num-vertices-down 5) (* num-vertices-down 7)) ;; right
+        (create-surface (* num-vertices-down 6) (* num-vertices-down 2)) ;; back
+        (create-surface (* num-vertices-down 3) (* num-vertices-down 1)) ;; left
+        (update :positions persistent!)
+        (update :normals persistent!)
+        (update :texcoords persistent!)
+        (update :indices persistent!))))
+
