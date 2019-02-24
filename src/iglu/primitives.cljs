@@ -17,6 +17,7 @@
 (s/def ::top-cap? boolean?)
 (s/def ::bottom-cap? boolean?)
 (s/def ::vertical-radius number?)
+(s/def ::inner-radius number?)
 (s/def ::outer-radius number?)
 (s/def ::thickness number?)
 (s/def ::subdivisions-down pos?)
@@ -24,6 +25,9 @@
 (s/def ::end-offset number?)
 (s/def ::start-angle number?)
 (s/def ::end-angle number?)
+(s/def ::divisions #(>= % 3))
+(s/def ::stacks number?)
+(s/def ::stack-power number?)
 
 (s/fdef plane
   :args (s/cat :props (s/keys :opt-un [::width ::depth ::subdivisions-width ::subdivisions-depth])))
@@ -488,6 +492,69 @@
                 (range radial-subdivisions)))
             (transient [])
             (range body-subdivisions)))
+        (update :positions persistent!)
+        (update :normals persistent!)
+        (update :texcoords persistent!)
+        (update :indices persistent!))))
+
+(s/fdef disc
+  :args (s/cat :props (s/keys
+                        :req-un [::radius ::divisions]
+                        :opt-un [::stacks ::inner-radius ::stack-power])))
+
+(defn disc [{:keys [radius divisions stacks inner-radius stack-power]
+             :or {stacks 1 inner-radius 0 stack-power 1}}]
+  (let [num-vertices (* (inc divisions) (inc stacks))
+        radius-span (- radius inner-radius)
+        points-per-stack (inc divisions)]
+    (-> (fn [m stack]
+          (let [stack-radius (+ inner-radius
+                                (* radius-span (js/Math.pow (/ stack stacks) stack-power)))]
+            (-> (fn [m i]
+                  (let [first-index (:first-index m)
+                        theta (-> 2 (* js/Math.PI) (* i) (/ divisions))
+                        x (* stack-radius (js/Math.cos theta))
+                        z (* stack-radius (js/Math.sin theta))]
+                    (-> m
+                        (update :positions (fn [positions]
+                                             (-> positions
+                                                 (conj! x)
+                                                 (conj! 0)
+                                                 (conj! z))))
+                        (update :normals (fn [normals]
+                                           (-> normals
+                                               (conj! 0)
+                                               (conj! 1)
+                                               (conj! 0))))
+                        (update :texcoords (fn [texcoords]
+                                             (-> texcoords
+                                                 (conj! (- 1 (/ i divisions)))
+                                                 (conj! (/ stack stacks)))))
+                        (update :indices (fn [indices]
+                                           (if (and (pos? stack)
+                                                    (not= i divisions))
+                                             (let [a (+ first-index i 1)
+                                                   b (+ first-index i)
+                                                   c (-> first-index (+ i) (- points-per-stack))
+                                                   d (-> first-index (+ (inc i)) (- points-per-stack))]
+                                               (-> indices
+                                                   (conj! a)
+                                                   (conj! b)
+                                                   (conj! c)
+                                                   (conj! a)
+                                                   (conj! c)
+                                                   (conj! d)))
+                                             indices))))))
+                (reduce m (range (inc divisions)))
+                (update :first-index + (inc divisions)))))
+        (reduce
+          {:first-index 0
+           :positions (transient [])
+           :normals (transient [])
+           :texcoords (transient [])
+           :indices (transient [])}
+          (range (inc stacks)))
+        (dissoc :first-index)
         (update :positions persistent!)
         (update :normals persistent!)
         (update :texcoords persistent!)
