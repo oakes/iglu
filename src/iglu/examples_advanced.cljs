@@ -164,3 +164,54 @@
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-advanced/planes-3d-init)))
 
+;; cubes-3d
+
+(defn cubes-3d-init [canvas]
+  (let [gl (.getContext canvas "webgl2")
+        {:keys [positions normals texcoords indices]}
+        (primitives/cube {:size 20})
+        program (ex/create-program gl
+                  data/balls-3d-vertex-shader-source
+                  data/balls-3d-fragment-shader-source)
+        *buffers (delay
+                   (ex/create-buffer gl program "a_position"
+                     (-> positions clj->js js/Float32Array.) {:size 3})
+                   (ex/create-buffer gl program "a_normal"
+                     (-> normals clj->js js/Float32Array.) {:size 3})
+                   (ex/create-buffer gl program "a_texCoord"
+                     (-> texcoords clj->js js/Float32Array.) {:size 2})
+                   (ex/create-index-buffer gl
+                     (-> indices clj->js js/Uint16Array.)))
+        vao (ex/create-vao gl *buffers)
+        props {:gl gl
+               :program program
+               :vao vao
+               :cnt @*buffers
+               :uniforms {:light-world-pos (.getUniformLocation gl program "u_lightWorldPos")
+                          :view-inverse (.getUniformLocation gl program "u_viewInverse")
+                          :light-color (.getUniformLocation gl program "u_lightColor")
+                          :world-view-projection (.getUniformLocation gl program "u_worldViewProjection")
+                          :world (.getUniformLocation gl program "u_world")
+                          :world-inverse-transpose (.getUniformLocation gl program "u_worldInverseTranspose")
+                          :color (.getUniformLocation gl program "u_color")
+                          :specular (.getUniformLocation gl program "u_specular")
+                          :shininess (.getUniformLocation gl program "u_shininess")
+                          :specular-factor (.getUniformLocation gl program "u_specularFactor")}
+               :objects (vec
+                          (for [i (range 100)]
+                            {:tz (rand 150)
+                             :rx (rand (* 2 js/Math.PI))
+                             :ry (rand js/Math.PI)
+                             :mat-uniforms {:u_color (array (rand) (rand) (rand) 1)
+                                            :u_specular        (array 1, 1, 1, 1)
+                                            :u_shininess       (rand 500)
+                                            :u_specularFactor  (rand 1)}}))}
+        state {:then 0
+               :now 0}]
+    (advanced-render canvas props state)))
+
+(defexample iglu.examples-advanced/cubes-3d
+  {:with-card card}
+  (->> (iglu.examples/create-canvas card)
+       (iglu.examples-advanced/cubes-3d-init)))
+

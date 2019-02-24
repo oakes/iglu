@@ -127,3 +127,78 @@
               (transient [])
               (range subdivisions-height)))))))
 
+(def cube-face-indices
+  [; right
+   [3 7 5 1]
+   ; left
+   [6 2 0 4]
+   [6 7 3 2]
+   [0 1 5 4]
+   ; front
+   [7 6 4 5]
+   ; back
+   [2 3 1 0]])
+
+(defn cube [{:keys [size] :or {size 1}}]
+  (let [k (/ size 2)
+        corner-vertices [[(- k) (- k) (- k)]
+                         [k (- k) (- k)]
+                         [(- k) k (- k)]
+                         [k k (- k)]
+                         [(- k) (- k) k]
+                         [k (- k) k]
+                         [(- k) k k]
+                         [k k k]]
+        face-normals [[1 0 0]
+                      [-1 0 0]
+                      [0 1 0]
+                      [0 -1 0]
+                      [0 0 1]
+                      [0 0 -1]]
+        uv-coords [[1 0]
+                   [0 0]
+                   [0 1]
+                   [1 1]]
+        num-vertices (* 6 4)]
+    (-> (fn [m f]
+          (let [face-indices (nth cube-face-indices f)
+                offset (* 4 f)]
+            (-> (fn [m v]
+                  (-> m
+                      (update :positions (fn [positions]
+                                           (let [[x y z] (nth corner-vertices (nth face-indices v))]
+                                             (-> positions
+                                                 (conj! x)
+                                                 (conj! y)
+                                                 (conj! z)))))
+                      (update :normals (fn [normals]
+                                         (let [[x y z] (nth face-normals f)]
+                                           (-> normals
+                                               (conj! x)
+                                               (conj! y)
+                                               (conj! z)))))
+                      (update :texcoords (fn [texcoords]
+                                           (let [[u v] (nth uv-coords v)]
+                                             (-> texcoords
+                                                 (conj! u)
+                                                 (conj! v)))))))
+                (reduce m (range 4))
+                (update :indices (fn [indices]
+                                   (-> indices
+                                       (conj! (+ offset 0))
+                                       (conj! (+ offset 1))
+                                       (conj! (+ offset 2))
+                                       (conj! (+ offset 0))
+                                       (conj! (+ offset 2))
+                                       (conj! (+ offset 3))))))))
+        (reduce
+          {:positions (transient [])
+           :normals (transient [])
+           :texcoords (transient [])
+           :indices (transient [])}
+          (range 6))
+        (update :positions persistent!)
+        (update :normals persistent!)
+        (update :texcoords persistent!)
+        (update :indices persistent!))))
+
