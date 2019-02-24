@@ -417,3 +417,79 @@
         (update :texcoords persistent!)
         (update :indices persistent!))))
 
+(s/fdef torus
+  :args (s/cat :props (s/keys
+                        :req-un [::radius ::thickness ::radial-subdivisions ::body-subdivisions]
+                        :opt-un [::start-angle ::end-angle])))
+
+(defn torus [{:keys [radius thickness radial-subdivisions body-subdivisions
+                     start-angle end-angle]
+              :or {start-angle 0 end-angle (* 2 js/Math.PI)}}]
+  (let [angle-range (- end-angle start-angle)
+        radial-parts (inc radial-subdivisions)
+        body-parts (inc body-subdivisions)
+        num-vertices (* radial-parts body-parts)]
+    (-> (fn [m slice]
+          (let [v (/ slice body-subdivisions)
+                slice-angle (* v js/Math.PI 2)
+                slice-sin (js/Math.sin slice-angle)
+                ring-radius (+ radius (* slice-sin thickness))
+                ny (js/Math.cos slice-angle)
+                y (* ny thickness)]
+            (reduce
+              (fn [m ring]
+                (let [u (/ ring radial-subdivisions)
+                      ring-angle (+ start-angle (* u angle-range))
+                      x-sin (js/Math.sin ring-angle)
+                      z-cos (js/Math.cos ring-angle)
+                      x (* x-sin ring-radius)
+                      z (* z-cos ring-radius)
+                      nx (* x-sin slice-sin)
+                      nz (* z-cos slice-sin)]
+                  (-> m
+                      (update :positions (fn [positions]
+                                           (-> positions
+                                               (conj! x)
+                                               (conj! y)
+                                               (conj! z))))
+                      (update :normals (fn [normals]
+                                         (-> normals
+                                             (conj! nx)
+                                             (conj! ny)
+                                             (conj! nz))))
+                      (update :texcoords (fn [texcoords]
+                                           (-> texcoords
+                                               (conj! u)
+                                               (conj! (- 1 v))))))))
+              m
+              (range radial-parts))))
+        (reduce
+          {:positions (transient [])
+           :normals (transient [])
+           :texcoords (transient [])}
+          (range body-parts))
+        (assoc :indices
+          (reduce
+            (fn [indices slice]
+              (reduce
+                (fn [indices ring]
+                  (let [next-ring-index (inc ring)
+                        next-slice-index (inc slice)]
+                    (-> indices
+                        ;; triangle 1
+                        (conj! (+ (* radial-parts slice) ring))
+                        (conj! (+ (* radial-parts next-slice-index) ring))
+                        (conj! (+ (* radial-parts slice) next-ring-index))
+                        ;; triangle 2
+                        (conj! (+ (* radial-parts next-slice-index) ring))
+                        (conj! (+ (* radial-parts next-slice-index) next-ring-index))
+                        (conj! (+ (* radial-parts slice) next-ring-index)))))
+                indices
+                (range radial-subdivisions)))
+            (transient [])
+            (range body-subdivisions)))
+        (update :positions persistent!)
+        (update :normals persistent!)
+        (update :texcoords persistent!)
+        (update :indices persistent!))))
+
