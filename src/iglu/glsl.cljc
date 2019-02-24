@@ -136,10 +136,10 @@
              (contains? (fn-deps b) a) -1
              :else 0)))))
 
-(defn ->glsl [{:keys [type version precision
-                      attributes uniforms varyings
-                      outputs signatures functions fn-deps]
-               :as shader}]
+(defn iglu->glsl [{:keys [type version precision
+                          attributes uniforms varyings
+                          outputs signatures functions fn-deps]
+                   :as shader}]
   (->> (cond-> []
                version (conj (str "#version " version))
                precision (conj (str "precision " precision ";"))

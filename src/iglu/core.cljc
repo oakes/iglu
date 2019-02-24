@@ -5,5 +5,5 @@
 (defn iglu->glsl [shader]
   (->> shader
        parse/parse
-       glsl/->glsl))
+       glsl/iglu->glsl))
 
