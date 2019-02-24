@@ -215,13 +215,13 @@
   (->> (iglu.examples/create-canvas card)
        (iglu.examples-advanced/cubes-3d-init)))
 
-;; truncated-cone-3d
+;; cylinder-3d
 
-(defn truncated-cone-3d-init [canvas]
+(defn cylinder-3d-init [canvas]
   (let [gl (.getContext canvas "webgl2")
         {:keys [positions normals texcoords indices]}
-        (primitives/truncated-cone {:bottom-radius 20 :top-radius 5 :height 30
-                                    :radial-subdivisions 10 :vertical-subdivisions 10})
+        (primitives/cylinder {:bottom-radius 10 :top-radius 10 :height 30
+                              :radial-subdivisions 10 :vertical-subdivisions 10})
         program (ex/create-program gl
                   data/balls-3d-vertex-shader-source
                   data/balls-3d-fragment-shader-source)
@@ -262,10 +262,10 @@
                :now 0}]
     (advanced-render canvas props state)))
 
-(defexample iglu.examples-advanced/truncated-cone-3d
+(defexample iglu.examples-advanced/cylinder-3d
   {:with-card card}
   (->> (iglu.examples/create-canvas card)
-       (iglu.examples-advanced/truncated-cone-3d-init)))
+       (iglu.examples-advanced/cylinder-3d-init)))
 
 ;; crescent-3d
 

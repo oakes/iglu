@@ -211,16 +211,16 @@
 (s/def ::vertical-subdivisions #(>= % 1))
 (s/def ::top-cap? boolean?)
 (s/def ::bottom-cap? boolean?)
-(s/fdef truncated-cone
+(s/fdef cylinder
   :args (s/cat :props (s/keys
                         :req-un [::bottom-radius ::top-radius
                                  ::radial-subdivisions ::vertical-subdivisions]
                         :opt-un [::top-cap? ::bottom-cap?])))
 
-(defn truncated-cone [{:keys [bottom-radius top-radius height
-                              radial-subdivisions vertical-subdivisions
-                              top-cap? bottom-cap?]
-                       :or {top-cap? true bottom-cap? true}}]
+(defn cylinder [{:keys [bottom-radius top-radius height
+                        radial-subdivisions vertical-subdivisions
+                        top-cap? bottom-cap?]
+                 :or {top-cap? true bottom-cap? true}}]
   (let [extra (+ (if top-cap? 2 0) (if bottom-cap? 2 0))
         num-vertices (* (inc radial-subdivisions)
                         (+ vertical-subdivisions 1 extra))
