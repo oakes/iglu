@@ -2,9 +2,34 @@
   (:require [clojure.spec.alpha :as s]
             [iglu.examples :as ex]))
 
+(s/def ::width number?)
+(s/def ::depth number?)
+(s/def ::radius number?)
+(s/def ::subdivisions-width number?)
+(s/def ::subdivisions-depth number?)
+(s/def ::subdivisions-axis pos?)
+(s/def ::subdivisions-height pos?)
+(s/def ::bottom-radius number?)
+(s/def ::top-radius number?)
+(s/def ::radial-subdivisions #(>= % 3))
+(s/def ::vertical-subdivisions #(>= % 1))
+(s/def ::body-subdivisions #(>= % 3))
+(s/def ::top-cap? boolean?)
+(s/def ::bottom-cap? boolean?)
+(s/def ::vertical-radius number?)
+(s/def ::outer-radius number?)
+(s/def ::thickness number?)
+(s/def ::subdivisions-down pos?)
+(s/def ::start-offset number?)
+(s/def ::end-offset number?)
+(s/def ::start-angle number?)
+(s/def ::end-angle number?)
+
+(s/fdef plane
+  :args (s/cat :props (s/keys :opt-un [::width ::depth ::subdivisions-width ::subdivisions-depth])))
+
 (defn plane [{:keys [width depth subdivisions-width subdivisions-depth]
-              :or {width 1 depth 1
-                   subdivisions-width 1 subdivisions-depth 1}}]
+              :or {width 1 depth 1 subdivisions-width 1 subdivisions-depth 1}}]
   (let [num-verts-across (inc subdivisions-width)]
     (-> (fn [m z]
           (reduce
@@ -56,9 +81,6 @@
         (update :texcoords persistent!)
         (update :indices persistent!))))
 
-(s/def ::radius number?)
-(s/def ::subdivisions-axis pos?)
-(s/def ::subdivisions-height pos?)
 (s/fdef sphere
   :args (s/cat :props (s/keys :req-un [::radius ::subdivisions-axis ::subdivisions-height])))
 
@@ -205,12 +227,6 @@
         (update :texcoords persistent!)
         (update :indices persistent!))))
 
-(s/def ::bottom-radius number?)
-(s/def ::top-radius number?)
-(s/def ::radial-subdivisions #(>= % 3))
-(s/def ::vertical-subdivisions #(>= % 1))
-(s/def ::top-cap? boolean?)
-(s/def ::bottom-cap? boolean?)
 (s/fdef cylinder
   :args (s/cat :props (s/keys
                         :req-un [::bottom-radius ::top-radius
@@ -315,12 +331,6 @@
         (update :texcoords persistent!)
         (update :indices persistent!))))
 
-(s/def ::vertical-radius number?)
-(s/def ::outer-radius number?)
-(s/def ::thickness number?)
-(s/def ::subdivisions-down pos?)
-(s/def ::start-offset number?)
-(s/def ::end-offset number?)
 (s/fdef cresent
   :args (s/cat :props (s/keys
                         :req-un [::vertical-radius ::outer-radius ::inner-radius
