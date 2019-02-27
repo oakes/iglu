@@ -3,9 +3,8 @@
   (:require-macros [dynadoc.example :refer [defexamples]]))
 
 (defexamples iglu.core/iglu->glsl
-  [(iglu->glsl
-     '{:type :vertex
-       :version "300 es"
+  [(iglu->glsl :vertex
+     '{:version "300 es"
        :attributes
        {a_position vec4
         a_color vec4}
@@ -19,9 +18,8 @@
        {main ([]
               [:= gl_Position [:* a_position u_matrix]]
               [:= v_color a_color])}})]
-  [(iglu->glsl
-     '{:type :fragment
-       :version "300 es"
+  [(iglu->glsl :fragment
+     '{:version "300 es"
        :precision "mediump float"
        :varyings
        {v_color vec4}
@@ -31,9 +29,8 @@
        {main ([] void)}
        :functions
        {main ([] [:= outColor v_color])}})]
-  [(iglu->glsl
-     '{:type :vertex
-       :version "300 es"
+  [(iglu->glsl :vertex
+     '{:version "300 es"
        :attributes
        {a_position vec4
         a_color vec4}
@@ -49,9 +46,8 @@
         main ([]
               [:= gl_Position [multiply u_matrix a_position]]
               [:= v_color a_color])}})]
-  [(iglu->glsl
-     '{:type :fragment
-       :version "300 es"
+  [(iglu->glsl :fragment
+     '{:version "300 es"
        :precision "mediump float"
        :varyings
        {v_color vec4}

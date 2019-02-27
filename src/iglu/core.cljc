@@ -2,8 +2,8 @@
   (:require [iglu.glsl :as glsl]
             [iglu.parse :as parse]))
 
-(defn iglu->glsl [shader]
+(defn iglu->glsl [shader-type shader]
   (->> shader
        parse/parse
-       glsl/iglu->glsl))
+       (glsl/iglu->glsl shader-type)))
 

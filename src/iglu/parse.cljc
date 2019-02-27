@@ -7,7 +7,6 @@
 
 (s/def ::declarations (s/map-of symbol? symbol?))
 
-(s/def ::type #{:vertex :fragment})
 (s/def ::version string?)
 (s/def ::precision string?)
 (s/def ::uniforms ::declarations)
@@ -46,8 +45,7 @@
 (s/def ::function (s/cat :args (s/coll-of symbol?) :body ::body))
 (s/def ::functions (s/map-of symbol? ::function))
 
-(s/def ::shader (s/keys :opt-un [::type
-                                 ::version
+(s/def ::shader (s/keys :opt-un [::version
                                  ::precision
                                  ::uniforms
                                  ::attributes
