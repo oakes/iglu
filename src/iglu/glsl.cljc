@@ -22,13 +22,13 @@
 
 (defmethod ->function-call ::assignment [fn-name args]
   (when-not (= 2 (count args))
-    (parse/throw-error ":= requires 2 args"))
+    (throw (ex-info ":= requires 2 args" {})))
   (let [[sym val] args]
     (str (->subexpression sym) " = " (->subexpression val))))
 
 (defmethod ->function-call ::local-assignment [fn-name args]
   (when-not (= 2 (count args))
-    (parse/throw-error (str (name fn-name) " requires 2 args")))
+    (throw (ex-info (str (name fn-name) " requires 2 args") {})))
   (let [[sym val] args]
     (str
       (-> fn-name name (subs 1))
@@ -39,7 +39,7 @@
 
 (defmethod ->function-call ::inline-conditional [fn-name args]
   (when-not (= 3 (count args))
-    (parse/throw-error ":? requires 3 args"))
+    (throw (ex-info ":? requires 3 args" {})))
   (let [[condition true-case false-case] args]
     (str
       (->subexpression condition)
@@ -51,12 +51,12 @@
 
 (defmethod ->function-call ::property [fn-name args]
   (when (not= (count args) 1)
-    (parse/throw-error (str fn-name " requires exactly one arg")))
+    (throw (ex-info (str fn-name " requires exactly one arg") {})))
   (str (-> args first ->subexpression) "." (-> fn-name name (subs 1))))
 
 (defmethod ->function-call ::number [fn-name args]
   (when (not= (count args) 1)
-    (parse/throw-error (str fn-name " requires exactly one arg")))
+    (throw (ex-info (str fn-name " requires exactly one arg") {})))
   (str (->subexpression (first args)) "[" fn-name "]"))
 
 (defmethod ->function-call :default [fn-name args]
@@ -92,9 +92,10 @@
 (defn ->function [signatures [name {:keys [args body]}]]
   (if-let [{:keys [in out]} (get signatures name)]
     (let [_ (when (not= (count in) (count args))
-              (parse/throw-error (str "The function " name " has args signature "
-                                   in " of a different length than its args definition "
-                                   args)))
+              (throw (ex-info (str "The function " name " has args signature "
+                                in " of a different length than its args definition "
+                                args)
+                       {})))
           args-list (str/join ", "
                       (mapv (fn [type name]
                               (str type " " name))
@@ -111,7 +112,7 @@
            (vec (butlast body-lines))
            (str "return " (last body-lines))))
        "}"])
-    (parse/throw-error (str "Nothing found in :signatures for function " name))))
+    (throw (ex-info (str "Nothing found in :signatures for function " name) {}))))
 
 ;; compiler fn
 

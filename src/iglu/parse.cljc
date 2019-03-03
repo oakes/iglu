@@ -2,9 +2,6 @@
   (:require [clojure.spec.alpha :as s]
             [expound.alpha :as expound]))
 
-(defn throw-error [msg]
-  (throw (#?(:clj Exception. :cljs js/Error.) msg)))
-
 (s/def ::declarations (s/map-of symbol? symbol?))
 
 (s/def ::version string?)
@@ -24,8 +21,9 @@
       (some-> *fn-dependencies*
               (swap! (fn [deps]
                        (when (contains? (deps x) *current-fn*)
-                         (throw-error (str "Cyclic dependency detected between functions "
-                                        *current-fn* " and " x)))
+                         (throw (ex-info (str "Cyclic dependency detected between functions "
+                                           *current-fn* " and " x)
+                                  {})))
                        (update deps *current-fn* #(conj (set %) x))))))
     true))
 
@@ -57,7 +55,7 @@
 (defn parse [content]
   (let [parsed-content (s/conform ::shader content)]
     (if (= parsed-content ::s/invalid)
-      (throw-error (expound/expound-str ::shader content))
+      (throw (ex-info (expound/expound-str ::shader content) {}))
       (let [*fn-deps (atom {})]
         (doseq [[fn-sym {:keys [body]}] (:functions content)]
           (binding [*fn-dependencies* *fn-deps
