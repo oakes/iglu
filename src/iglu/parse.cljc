@@ -57,7 +57,7 @@
     (if (= parsed-content ::s/invalid)
       (throw (ex-info (expound/expound-str ::shader content) {}))
       (let [*fn-deps (atom {})]
-        (doseq [[fn-sym {:keys [body]}] (:functions content)]
+        (doseq [[fn-sym {:keys [body]}] (:functions parsed-content)]
           (binding [*fn-dependencies* *fn-deps
                     *current-fn* fn-sym]
             (s/conform ::body body)))
