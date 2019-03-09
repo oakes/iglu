@@ -1,6 +1,6 @@
 ## Introduction
 
-A Clojure and ClojureScript library for turning data into GLSL shaders for use by OpenGL and WebGL.
+A Clojure and ClojureScript library for turning data into GLSL shaders for use by OpenGL and WebGL. Currently a work in progress.
 
 ## Development
 
