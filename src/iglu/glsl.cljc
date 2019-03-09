@@ -8,11 +8,11 @@
   (fn [fn-name args]
     (cond
       (number? fn-name) ::number
-      (= := fn-name) ::assignment
-      (-> fn-name name (str/starts-with? "=")) ::local-assignment
-      (= :? fn-name) ::inline-conditional
-      (#{:+ :- :* :/ :< :> :<= :>= :== :!=} fn-name) ::operator
-      (-> fn-name name (str/starts-with? "-")) ::property
+      (= '= fn-name) ::assignment
+      (-> fn-name str (str/starts-with? "=")) ::local-assignment
+      (= '? fn-name) ::inline-conditional
+      ('#{+ - * / < > <= >= == !=} fn-name) ::operator
+      (-> fn-name str (str/starts-with? ".")) ::property
       :else fn-name)))
 
 (defmulti ->subexpression
@@ -28,10 +28,10 @@
 
 (defmethod ->function-call ::local-assignment [fn-name args]
   (when-not (= 2 (count args))
-    (throw (ex-info (str (name fn-name) " requires 2 args") {})))
+    (throw (ex-info (str fn-name " requires 2 args") {})))
   (let [[sym val] args]
     (str
-      (-> fn-name name (subs 1))
+      (-> fn-name str (subs 1))
       " "
       (->subexpression sym)
       " = "
@@ -47,12 +47,12 @@
       " : " (->subexpression false-case))))
 
 (defmethod ->function-call ::operator [fn-name args]
-  (str/join (str " " (name fn-name) " ") (mapv ->subexpression args)))
+  (str/join (str " " fn-name " ") (mapv ->subexpression args)))
 
 (defmethod ->function-call ::property [fn-name args]
   (when (not= (count args) 1)
     (throw (ex-info (str fn-name " requires exactly one arg") {})))
-  (str (-> args first ->subexpression) "." (-> fn-name name (subs 1))))
+  (str (-> args first ->subexpression) "." (-> fn-name str (subs 1))))
 
 (defmethod ->function-call ::number [fn-name args]
   (when (not= (count args) 1)
@@ -60,7 +60,7 @@
   (str (->subexpression (first args)) "[" fn-name "]"))
 
 (defmethod ->function-call :default [fn-name args]
-  (str (name fn-name) "(" (str/join ", " (mapv ->subexpression args)) ")"))
+  (str fn-name "(" (str/join ", " (mapv ->subexpression args)) ")"))
 
 ;; ->expression
 

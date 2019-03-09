@@ -16,8 +16,8 @@
        {main ([] void)}
        :functions
        {main ([]
-              [:= gl_Position [:* a_position u_matrix]]
-              [:= v_color a_color])}})]
+              (= gl_Position (* a_position u_matrix))
+              (= v_color a_color))}})]
   [(iglu->glsl :fragment
      '{:version "300 es"
        :precision "mediump float"
@@ -28,7 +28,7 @@
        :signatures
        {main ([] void)}
        :functions
-       {main ([] [:= outColor v_color])}})]
+       {main ([] (= outColor v_color))}})]
   [(iglu->glsl :vertex
      '{:version "300 es"
        :attributes
@@ -42,10 +42,10 @@
        {multiply ([mat4 vec4] vec4)
         main ([] void)}
        :functions
-       {multiply ([x y] [:* x y])
+       {multiply ([x y] (* x y))
         main ([]
-              [:= gl_Position [multiply u_matrix a_position]]
-              [:= v_color a_color])}})]
+              (= gl_Position (multiply u_matrix a_position))
+              (= v_color a_color))}})]
   [(iglu->glsl :fragment
      '{:version "300 es"
        :precision "mediump float"
@@ -56,5 +56,5 @@
        :signatures
        {main ([] void)}
        :functions
-       {main ([] [:= outColor v_color])}})])
+       {main ([] (= outColor v_color))}})])
 

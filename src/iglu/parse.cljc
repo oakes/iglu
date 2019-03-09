@@ -16,7 +16,7 @@
 (def ^:dynamic *current-fn* nil)
 
 (defn fn-name? [x]
-  (when (or (keyword? x) (symbol? x) (number? x))
+  (when (or (symbol? x) (number? x))
     (when *current-fn*
       (some-> *fn-dependencies*
               (swap! (fn [deps]
