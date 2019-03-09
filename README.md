@@ -1,6 +1,6 @@
 ## Introduction
 
-A Clojure and ClojureScript library for turning data into GLSL shaders for use by OpenGL and WebGL. Currently a work in progress.
+A Clojure and ClojureScript library for turning data into GLSL shaders for use by OpenGL and WebGL. Currently a work in progress. See [the dynadocs](https://oakes.github.io/iglu/) to learn how to use it.
 
 ## Development
 
