@@ -1,4 +1,4 @@
-(defproject iglu "0.2.0"
+(defproject iglu "0.2.1-SNAPSHOT"
   :description "A Clojure data -> GLSL library"
   :url "https://github.com/oakes/iglu"
   :license {:name "Public Domain"
