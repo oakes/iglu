@@ -8,10 +8,11 @@
   (fn [fn-name args]
     (cond
       (number? fn-name) ::number
-      (= '= fn-name) ::assignment
-      (-> fn-name str (str/starts-with? "=")) ::local-assignment
+      (= 'if fn-name) ::conditional
       (= '? fn-name) ::inline-conditional
       ('#{+ - * / < > <= >= == !=} fn-name) ::operator
+      (= '= fn-name) ::assignment
+      (-> fn-name str (str/starts-with? "=")) ::local-assignment
       (-> fn-name str (str/starts-with? ".")) ::property
       :else fn-name)))
 
@@ -37,9 +38,19 @@
       " = "
       (->subexpression val))))
 
+(defmethod ->function-call ::conditional [fn-name args]
+  (when-not (< 1 (count args) 4)
+    (throw (ex-info (str fn-name "if requires 2 or 3 args" {}))))
+  (let [[condition true-case false-case] args]
+    [[(str "if " (->subexpression condition))
+      (->subexpression true-case)]
+     (when false-case
+       ["else"
+        (->subexpression false-case)])]))
+
 (defmethod ->function-call ::inline-conditional [fn-name args]
   (when-not (= 3 (count args))
-    (throw (ex-info ":? requires 3 args" {})))
+    (throw (ex-info "? requires 3 args" {})))
   (let [[condition true-case false-case] args]
     (str
       (->subexpression condition)
@@ -80,14 +91,14 @@
 ;; var definitions
 
 (defn ->in [[name type]]
-  (str "in " type " " name ";"))
+  (str "in " type " " name))
 
 (defn ->uniform [[name type]]
-  (str "uniform " type " " name ";"))
+  (str "uniform " type " " name))
 
 (defn ->out [[name type]]
   (when type
-    (str "out " type " " name ";")))
+    (str "out " type " " name)))
 
 (defn ->function [signatures [name {:keys [args body]}]]
   (if-let [{:keys [in out]} (get signatures name)]
@@ -102,30 +113,36 @@
                         in args))
           body-lines (->> body
                           (mapv (fn [{:keys [fn-name args]}]
-                                  (->function-call fn-name args)))
-                          (mapv #(str % ";")))]
-      [(str out " " name "(" args-list ")")
-       "{"
-       (if (= 'void out)
-         body-lines
-         (conj
-           (vec (butlast body-lines))
-           (str "return " (last body-lines))))
-       "}"])
+                                  (->function-call fn-name args))))]
+      (into [(str out " " name "(" args-list ")")]
+            (if (= 'void out)
+              body-lines
+              (conj
+                (vec (butlast body-lines))
+                (str "return " (last body-lines))))))
     (throw (ex-info (str "Nothing found in :signatures for function " name) {}))))
 
 ;; compiler fn
 
-(defn indent [level content]
-  (reduce
-    (fn [v line]
-      (conj v
-        (if (string? line)
-          (str (str/join (repeat (* level 2) " "))
-            line)
-          (indent (inc level) line))))
-    []
-    content))
+(defn indent [level line]
+  (str (str/join (repeat (* level 2) " "))
+       line))
+
+(defn stringify [level lines line]
+  (cond
+    (string? line)
+    (conj lines
+          (if (str/starts-with? line "#")
+            line
+            (str (indent level line) ";")))
+    (string? (first line))
+    (-> lines
+        (conj (indent level (first line)))
+        (conj (indent level "{"))
+        (into (reduce (partial stringify (inc level)) [] (rest line)))
+        (conj (indent level "}")))
+    :else
+    (into lines (reduce (partial stringify level) [] line))))
 
 (defn sort-fns [functions fn-deps]
   (->> functions
@@ -144,16 +161,15 @@
                    :as shader}]
   (->> (cond-> []
                version (conj (str "#version " version))
-               precision (conj (str "precision " precision ";"))
+               precision (conj (str "precision " precision))
                (= shader-type :vertex) (into (mapv ->in attributes))
                uniforms (into (mapv ->uniform uniforms))
                varyings (into (case shader-type
                                 :vertex (mapv ->out varyings)
                                 :fragment (mapv ->in varyings)))
                outputs (into (mapv ->out outputs))
-               functions (into (mapcat (partial ->function signatures)
+               functions (into (mapv (partial ->function signatures)
                                  (sort-fns functions fn-deps))))
-       (indent 0)
-       flatten
+       (reduce (partial stringify 0) [])
        (str/join \newline)))
 
