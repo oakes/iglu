@@ -40,7 +40,7 @@
 
 (defmethod ->function-call ::conditional [fn-name args]
   (when-not (< 1 (count args) 4)
-    (throw (ex-info (str fn-name "if requires 2 or 3 args" {}))))
+    (throw (ex-info (str fn-name " requires 2 or 3 args") {})))
   (let [[condition true-case false-case] args]
     [[(str "if " (->subexpression condition))
       (->subexpression true-case)]
@@ -50,7 +50,7 @@
 
 (defmethod ->function-call ::inline-conditional [fn-name args]
   (when-not (= 3 (count args))
-    (throw (ex-info "? requires 3 args" {})))
+    (throw (ex-info (str fn-name " requires 3 args") {})))
   (let [[condition true-case false-case] args]
     (str
       (->subexpression condition)
