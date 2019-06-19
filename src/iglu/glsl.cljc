@@ -10,7 +10,7 @@
       (number? fn-name) ::number
       (#{"if" "else if" "switch" "for" "while"} fn-name) ::block-with-expression
       (string? fn-name) ::block
-      (= '? fn-name) ::inline-conditional
+      ('#{? if} fn-name) ::inline-conditional
       ('#{+ - * / < > <= >= == !=} fn-name) ::operator
       (= '= fn-name) ::assignment
       (-> fn-name str (str/starts-with? "=")) ::local-assignment
