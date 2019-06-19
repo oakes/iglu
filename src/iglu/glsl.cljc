@@ -8,7 +8,7 @@
   (fn [fn-name args]
     (cond
       (number? fn-name) ::number
-      (#{"if" "else if"} fn-name) ::conditional-block
+      (#{"if" "else if" "switch" "for" "while"} fn-name) ::block-with-expression
       (string? fn-name) ::block
       (= '? fn-name) ::inline-conditional
       ('#{+ - * / < > <= >= == !=} fn-name) ::operator
@@ -39,20 +39,18 @@
       " = "
       (->subexpression val))))
 
-(defmethod ->function-call ::conditional-block [fn-name args]
-  (when (< (count args) 2)
-    (throw (ex-info (str fn-name " requires 2 args") {})))
+(defmethod ->function-call ::block-with-expression [fn-name args]
+  (when (< (count args) 1)
+    (throw (ex-info (str fn-name " requires 1 arg") {})))
   (let [[condition & body] args]
-    (cons
-      (str fn-name " " (->subexpression condition))
-      (mapv ->subexpression body))))
+    (cond-> (str fn-name " " (->subexpression condition))
+            (seq body)
+            (cons (mapv ->subexpression body)))))
 
 (defmethod ->function-call ::block [fn-name args]
   (when (< (count args) 1)
     (throw (ex-info (str fn-name " requires 1 arg") {})))
-  (cons
-    (str fn-name " ")
-    (mapv ->subexpression args)))
+  (cons fn-name (mapv ->subexpression args)))
 
 (defmethod ->function-call ::inline-conditional [fn-name args]
   (when-not (= 3 (count args))
