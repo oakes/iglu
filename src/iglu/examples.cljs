@@ -3,7 +3,7 @@
   (:require-macros [dynadoc.example :refer [defexamples]]))
 
 (defexamples iglu.core/iglu->glsl
-  ["A simple vertex shader"
+  ["A simple vertex shader."
    (iglu->glsl :vertex
      '{:version "300 es"
        :attributes
@@ -19,7 +19,7 @@
        {main ([]
               (= gl_Position (* a_position u_matrix))
               (= v_color a_color))}})]
-  ["A simple fragment shader"
+  ["A simple fragment shader."
    (iglu->glsl :fragment
      '{:version "300 es"
        :precision "mediump float"
@@ -31,7 +31,7 @@
        {main ([] void)}
        :functions
        {main ([] (= outColor v_color))}})]
-  ["A vertex shader with a user-defined function"
+  ["A vertex shader with a user-defined function."
    (iglu->glsl :vertex
      '{:version "300 es"
        :attributes
@@ -49,7 +49,7 @@
         main ([]
               (= gl_Position (multiply u_matrix a_position))
               (= v_color a_color))}})]
-  ["You can specify function bodies as a single string if you want to write them entirely in GLSL."
+  ["You can specify function bodies as a string if you want to write them entirely in GLSL."
    (iglu->glsl :vertex
      '{:version "300 es"
        :attributes
@@ -66,5 +66,25 @@
        {multiply ([x y] "return x * y;")
         main ([]
               "gl_Position = multiply(u_matrix, a_position);
-v_color = a_color;")}})])
+v_color = a_color;")}})]
+  ["You can also specify specific values as strings, making iglu pass them through
+   without modification. This is generally what you want for GLSL keywords and
+   floating point numbers."
+   (iglu->glsl :fragment
+     '{:precision "mediump float"
+       :uniforms
+       {u_image sampler2D}
+       :varyings
+       {v_texCoord vec2}
+       :outputs
+       {outColor vec4}
+       :signatures
+       {main ([] void)}
+       :functions
+       {main ([]
+               (= outColor (texture u_image v_texCoord))
+               ("if" (== (.rgb outColor) (vec3 "0.0" "0.0" "0.0"))
+                 "discard")
+               ("else"
+                 (= outColor (vec4 "0.0" "0.0" "0.0" "1.0"))))}})])
 
