@@ -1,5 +1,5 @@
 {:main          iglu.dev
- :optimizations :simple
+ :optimizations :none
  :output-to     "dev-resources/dynadoc-extend/main.js"
  :output-dir    "dev-resources/dynadoc-extend/main.out"
  :asset-path    "/main.out"}
