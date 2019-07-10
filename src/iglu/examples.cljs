@@ -3,7 +3,8 @@
   (:require-macros [dynadoc.example :refer [defexamples]]))
 
 (defexamples iglu.core/iglu->glsl
-  [(iglu->glsl :vertex
+  ["A simple vertex shader"
+   (iglu->glsl :vertex
      '{:version "300 es"
        :attributes
        {a_position vec4
@@ -18,7 +19,8 @@
        {main ([]
               (= gl_Position (* a_position u_matrix))
               (= v_color a_color))}})]
-  [(iglu->glsl :fragment
+  ["A simple fragment shader"
+   (iglu->glsl :fragment
      '{:version "300 es"
        :precision "mediump float"
        :varyings
@@ -29,7 +31,8 @@
        {main ([] void)}
        :functions
        {main ([] (= outColor v_color))}})]
-  [(iglu->glsl :vertex
+  ["A vertex shader with a user-defined function"
+   (iglu->glsl :vertex
      '{:version "300 es"
        :attributes
        {a_position vec4
@@ -46,15 +49,22 @@
         main ([]
               (= gl_Position (multiply u_matrix a_position))
               (= v_color a_color))}})]
-  [(iglu->glsl :fragment
+  ["You can specify function bodies as a single string if you want to write them entirely in GLSL."
+   (iglu->glsl :vertex
      '{:version "300 es"
-       :precision "mediump float"
+       :attributes
+       {a_position vec4
+        a_color vec4}
+       :uniforms
+       {u_matrix mat4}
        :varyings
        {v_color vec4}
-       :outputs
-       {outColor vec4}
        :signatures
-       {main ([] void)}
+       {multiply ([mat4 vec4] vec4)
+        main ([] void)}
        :functions
-       {main ([] (= outColor v_color))}})])
+       {multiply ([x y] "return x * y;")
+        main ([]
+              "gl_Position = multiply(u_matrix, a_position);
+v_color = a_color;")}})])
 

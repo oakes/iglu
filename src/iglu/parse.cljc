@@ -40,7 +40,9 @@
 (s/def ::signature (s/cat :in (s/coll-of symbol?) :out symbol?))
 (s/def ::signatures (s/map-of symbol? ::signature))
 
-(s/def ::body (s/+ (s/spec ::expression)))
+(s/def ::body (s/alt
+                :string string?
+                :data (s/+ (s/spec ::expression))))
 (s/def ::function (s/cat :args (s/coll-of symbol?) :body ::body))
 (s/def ::functions (s/map-of symbol? ::function))
 
