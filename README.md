@@ -4,7 +4,7 @@
 
 A Clojure and ClojureScript library for turning data into GLSL shaders for use by OpenGL and WebGL.
 
-### Try the [interactive docs](https://oakes.github.io/iglu/)!
+### [Try the interactive docs!](https://oakes.github.io/iglu/)
 
 ## Usage
 
