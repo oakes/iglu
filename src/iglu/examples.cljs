@@ -4,14 +4,14 @@
 
 (defexamples iglu.core/iglu->glsl
   ["A simple vertex shader."
-   (iglu->glsl :vertex
+   (iglu->glsl
      '{:version "300 es"
-       :attributes
-       {a_position vec4
-        a_color vec4}
        :uniforms
        {u_matrix mat4}
-       :varyings
+       :inputs
+       {a_position vec4
+        a_color vec4}
+       :outputs
        {v_color vec4}
        :signatures
        {main ([] void)}
@@ -20,10 +20,10 @@
               (= gl_Position (* a_position u_matrix))
               (= v_color a_color))}})]
   ["A simple fragment shader."
-   (iglu->glsl :fragment
+   (iglu->glsl
      '{:version "300 es"
        :precision "mediump float"
-       :varyings
+       :inputs
        {v_color vec4}
        :outputs
        {outColor vec4}
@@ -32,14 +32,14 @@
        :functions
        {main ([] (= outColor v_color))}})]
   ["A vertex shader with a user-defined function."
-   (iglu->glsl :vertex
+   (iglu->glsl
      '{:version "300 es"
-       :attributes
-       {a_position vec4
-        a_color vec4}
        :uniforms
        {u_matrix mat4}
-       :varyings
+       :inputs
+       {a_position vec4
+        a_color vec4}
+       :outputs
        {v_color vec4}
        :signatures
        {multiply ([mat4 vec4] vec4)
@@ -50,14 +50,14 @@
               (= gl_Position (multiply u_matrix a_position))
               (= v_color a_color))}})]
   ["You can specify function bodies as a string if you want to write them entirely in GLSL."
-   (iglu->glsl :vertex
+   (iglu->glsl
      '{:version "300 es"
-       :attributes
-       {a_position vec4
-        a_color vec4}
        :uniforms
        {u_matrix mat4}
-       :varyings
+       :inputs
+       {a_position vec4
+        a_color vec4}
+       :outputs
        {v_color vec4}
        :signatures
        {multiply ([mat4 vec4] vec4)
@@ -70,11 +70,12 @@ v_color = a_color;")}})]
   ["You can also specify specific values as strings, making iglu pass them through
    without modification. This is generally what you want for GLSL keywords and
    floating point numbers."
-   (iglu->glsl :fragment
-     '{:precision "mediump float"
+   (iglu->glsl
+     '{:version "300 es"
+       :precision "mediump float"
        :uniforms
        {u_image sampler2D}
-       :varyings
+       :inputs
        {v_texCoord vec2}
        :outputs
        {outColor vec4}

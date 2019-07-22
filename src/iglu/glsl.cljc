@@ -166,19 +166,15 @@
              (contains? (fn-deps b) a) -1
              :else 0)))))
 
-(defn iglu->glsl [shader-type
-                  {:keys [version precision
-                          attributes uniforms varyings
-                          outputs signatures functions fn-deps]
+(defn iglu->glsl [{:keys [version precision
+                          uniforms inputs outputs
+                          signatures functions fn-deps]
                    :as shader}]
   (->> (cond-> []
                version (conj (str "#version " version))
                precision (conj (str "precision " precision))
-               (= shader-type :vertex) (into (mapv ->in attributes))
                uniforms (into (mapv ->uniform uniforms))
-               varyings (into (case shader-type
-                                :vertex (mapv ->out varyings)
-                                :fragment (mapv ->in varyings)))
+               inputs (into (mapv ->in inputs))
                outputs (into (mapv ->out outputs))
                functions (into (mapv (partial ->function signatures)
                                  (sort-fns functions fn-deps))))
