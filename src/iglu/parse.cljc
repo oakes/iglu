@@ -19,9 +19,9 @@
     (some-> *fn-dependencies*
             (swap! (fn [deps]
                      (when (contains? (deps x) *current-fn*)
-                       (throw (ex-info (str "Cyclic dependency detected between functions "
-                                         *current-fn* " and " x)
-                                {})))
+                       (throw (ex-info "Cyclic dependency detected between functions"
+                                {:first-fn *current-fn*
+                                 :second-fn x})))
                      (update deps *current-fn* #(conj (set %) x))))))
   (or (symbol? x)
       (number? x)

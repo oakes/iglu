@@ -110,10 +110,10 @@
 (defn ->function [signatures [name {:keys [args body]}]]
   (if-let [{:keys [in out]} (get signatures name)]
     (let [_ (when (not= (count in) (count args))
-              (throw (ex-info (str "The function " name " has args signature "
-                                in " of a different length than its args definition "
-                                args)
-                       {})))
+              (throw (ex-info "Function has args signature of a different length than its args definition"
+                       {:fn name
+                        :signature in
+                        :definition args})))
           args-list (str/join ", "
                       (mapv (fn [type name]
                               (str type " " name))
@@ -128,7 +128,7 @@
             (conj
               (vec (butlast body-lines))
               (str "return " (last body-lines)))))))
-    (throw (ex-info (str "Nothing found in :signatures for function " name) {}))))
+    (throw (ex-info "Nothing found in :signatures for function" {:fn name}))))
 
 ;; compiler fn
 
