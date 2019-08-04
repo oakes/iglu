@@ -24,7 +24,7 @@
 
 (defmethod ->function-call ::assignment [fn-name args]
   (when-not (= 2 (count args))
-    (throw (ex-info ":= requires 2 args" {})))
+    (throw (ex-info (str fn-name " requires 2 args") {})))
   (let [[sym val] args]
     (str (->subexpression sym) " = " (->subexpression val))))
 
