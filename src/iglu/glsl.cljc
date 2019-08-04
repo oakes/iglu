@@ -118,19 +118,16 @@
                       (mapv (fn [type name]
                               (str type " " name))
                         in args))
-          signature (str out " " name "(" args-list ")")
-          [body-type body] body]
+          signature (str out " " name "(" args-list ")")]
       (into [signature]
-        (case body-type
-          :data (let [body-lines (mapv (fn [{:keys [fn-name args]}]
-                                         (->function-call fn-name args))
-                                       body)]
-                  (if (= 'void out)
-                    body-lines
-                    (conj
-                      (vec (butlast body-lines))
-                      (str "return " (last body-lines)))))
-          :string (str/split-lines body))))
+        (let [body-lines (mapv (fn [{:keys [fn-name args]}]
+                                 (->function-call fn-name args))
+                               body)]
+          (if (= 'void out)
+            body-lines
+            (conj
+              (vec (butlast body-lines))
+              (str "return " (last body-lines)))))))
     (throw (ex-info (str "Nothing found in :signatures for function " name) {}))))
 
 ;; compiler fn

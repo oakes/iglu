@@ -49,27 +49,8 @@
         main ([]
               (= gl_Position (multiply u_matrix a_position))
               (= v_color a_color))}})]
-  ["You can specify function bodies as a string if you want to write them entirely in GLSL."
-   (iglu->glsl
-     '{:version "300 es"
-       :uniforms
-       {u_matrix mat4}
-       :inputs
-       {a_position vec4
-        a_color vec4}
-       :outputs
-       {v_color vec4}
-       :signatures
-       {multiply ([mat4 vec4] vec4)
-        main ([] void)}
-       :functions
-       {multiply ([x y] "return x * y;")
-        main ([]
-              "gl_Position = multiply(u_matrix, a_position);
-v_color = a_color;")}})]
-  ["You can also specify specific values as strings, making iglu pass them through
-   without modification. This is generally what you want for GLSL keywords and
-   floating point numbers."
+  ["Strings are passed through without modification. This is generally what you
+   want for GLSL keywords and floating point numbers."
    (iglu->glsl
      '{:version "300 es"
        :precision "mediump float"
