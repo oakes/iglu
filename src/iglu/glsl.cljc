@@ -81,10 +81,10 @@
 
 (defmethod ->subexpression :expression [[_ expression]]
   (let [{:keys [fn-name args]} expression
-        s (->function-call fn-name args)]
-    (when-not (string? s)
-      (throw (ex-info (str fn-name " can't be used as an expression") {})))
-    (str "(" s ")")))
+        ret (->function-call fn-name args)]
+    (if (string? ret)
+      (str "(" ret ")")
+      ret)))
 
 (defmethod ->subexpression :number [[_ number]]
   (str number))
