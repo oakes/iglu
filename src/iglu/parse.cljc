@@ -2,7 +2,10 @@
   (:require [clojure.spec.alpha :as s]
             [expound.alpha :as expound]))
 
-(s/def ::declarations (s/map-of symbol? symbol?))
+(s/def ::type (s/or
+                :type-name symbol?
+                :array (s/cat :type-name symbol? :size int?)))
+(s/def ::declarations (s/map-of symbol? ::type))
 
 (s/def ::version string?)
 (s/def ::precision string?)

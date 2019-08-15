@@ -12,7 +12,7 @@
       (string? fn-name) ::block
       ('#{? if} fn-name) ::inline-conditional
       ('#{+ - * / < > <= >= == !=} fn-name) ::operator
-      (= '= fn-name) ::assignment
+      ('#{= += -= *=} fn-name) ::assignment
       (-> fn-name str (str/starts-with? "=")) ::local-assignment
       (-> fn-name str (str/starts-with? ".")) ::property
       :else fn-name)))
@@ -26,7 +26,7 @@
   (when-not (= 2 (count args))
     (throw (ex-info (str fn-name " requires 2 args") {})))
   (let [[sym val] args]
-    (str (->subexpression sym) " = " (->subexpression val))))
+    (str (->subexpression sym) " " fn-name " " (->subexpression val))))
 
 (defmethod ->function-call ::local-assignment [fn-name args]
   (when-not (= 2 (count args))
@@ -97,15 +97,20 @@
 
 ;; var definitions
 
+(defn- parse-type [[k v]]
+  (case k
+    :type-name v
+    :array (str (:type-name v) "[" (:size v) "]")))
+
 (defn ->in [[name type]]
-  (str "in " type " " name))
+  (str "in " (parse-type type) " " name))
 
 (defn ->uniform [[name type]]
-  (str "uniform " type " " name))
+  (str "uniform " (parse-type type) " " name))
 
 (defn ->out [[name type]]
   (when type
-    (str "out " type " " name)))
+    (str "out " (parse-type type) " " name)))
 
 (defn ->function [signatures [name {:keys [args body]}]]
   (if-let [{:keys [in out]} (get signatures name)]

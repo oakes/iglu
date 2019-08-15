@@ -68,5 +68,33 @@
                ("if" (== (.rgb outColor) (vec3 "0.0" "0.0" "0.0"))
                  "discard")
                ("else"
-                 (= outColor (vec4 "0.0" "0.0" "0.0" "1.0"))))}})])
+                 (= outColor (vec4 "0.0" "0.0" "0.0" "1.0"))))}})]
+  ["A vertex shader that loops over a uniform array."
+   (iglu->glsl
+     '{:version "300 es"
+       :uniforms
+       {u_matrix mat3
+        u_char_counts [int 10]}
+       :inputs
+       {a_position vec2
+        a_color vec4}
+       :outputs
+       {v_color vec4}
+       :signatures
+       {main ([] void)}
+       :functions
+       {main ([]
+              (=int total_char_count 0)
+              (=int current_line 0)
+              ("for" "(int i=0; i<1024; ++i)"
+                (+= total_char_count "u_char_counts[i]")
+                ("if" (> total_char_count gl_InstanceID) "break")
+                ("else" (+= current_line 1)))
+              (=mat3 matrix u_matrix)
+              (*= "matrix[2][1]" current_line)
+              (= gl_Position
+                (vec4
+                  (.xy (* matrix (vec3 a_position 1)))
+                  0 1))
+              (= v_color a_color))}})])
 
