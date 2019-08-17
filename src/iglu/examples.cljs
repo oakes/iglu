@@ -74,7 +74,7 @@
      '{:version "300 es"
        :uniforms
        {u_matrix mat3
-        u_char_counts [int 10]}
+        u_char_counts [int 1000]}
        :inputs
        {a_position vec2
         a_color vec4}
@@ -86,7 +86,7 @@
        {main ([]
               (=int total_char_count 0)
               (=int current_line 0)
-              ("for" "(int i=0; i<1024; ++i)"
+              ("for" "(int i=0; i<1000; ++i)"
                 (+= total_char_count [u_char_counts i])
                 ("if" (> total_char_count gl_InstanceID) "break")
                 ("else" (+= current_line 1)))
