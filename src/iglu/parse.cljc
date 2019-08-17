@@ -37,6 +37,7 @@
                          :number number?
                          :symbol symbol?
                          :string string?
+                         :accessor (s/and vector? ::expression)
                          :expression ::expression))
 
 (s/def ::signature (s/cat :in (s/coll-of symbol?) :out symbol?))

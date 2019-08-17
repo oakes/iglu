@@ -86,6 +86,13 @@
       (str "(" ret ")")
       ret)))
 
+(defmethod ->subexpression :accessor [[_ expression]]
+  (let [{:keys [fn-name args]} expression]
+    (->> args
+         (map #(str "[" (->subexpression %) "]"))
+         str/join
+         (str fn-name))))
+
 (defmethod ->subexpression :number [[_ number]]
   (str number))
 

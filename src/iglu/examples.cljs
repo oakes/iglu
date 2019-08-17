@@ -87,11 +87,11 @@
               (=int total_char_count 0)
               (=int current_line 0)
               ("for" "(int i=0; i<1024; ++i)"
-                (+= total_char_count "u_char_counts[i]")
+                (+= total_char_count [u_char_counts i])
                 ("if" (> total_char_count gl_InstanceID) "break")
                 ("else" (+= current_line 1)))
               (=mat3 matrix u_matrix)
-              (*= "matrix[2][1]" current_line)
+              (*= [matrix 2 1] current_line)
               (= gl_Position
                 (vec4
                   (.xy (* matrix (vec3 a_position 1)))
