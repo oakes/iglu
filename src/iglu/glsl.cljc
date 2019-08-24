@@ -8,11 +8,11 @@
   (fn [fn-name args]
     (cond
       (number? fn-name) ::number
+      ('#{? if} fn-name) ::inline-conditional
+      ('#{+ - * / < > <= >= == != || && "^^"} fn-name) ::operator
+      ('#{= += -= *= "/="} fn-name) ::assignment
       (#{"if" "else if" "switch" "for" "while"} fn-name) ::block-with-expression
       (string? fn-name) ::block
-      ('#{? if} fn-name) ::inline-conditional
-      ('#{+ - * / < > <= >= == != || &&} fn-name) ::operator
-      ('#{= += -= *=} fn-name) ::assignment
       (-> fn-name str (str/starts-with? "=")) ::local-assignment
       (-> fn-name str (str/starts-with? ".")) ::property
       :else fn-name)))
