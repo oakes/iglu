@@ -20,6 +20,9 @@
 (defmulti ->subexpression
   (fn [val] (first val)))
 
+(defmulti ->statement
+  (fn [val] (first val)))
+
 ;; ->function-call
 
 (defmethod ->function-call ::assignment [fn-name args]
@@ -45,12 +48,12 @@
   (let [[condition & body] args]
     (cond-> (str fn-name " " (->subexpression condition))
             (seq body)
-            (cons (mapv ->subexpression body)))))
+            (cons (mapv ->statement body)))))
 
 (defmethod ->function-call ::block [fn-name args]
   (when (< (count args) 1)
     (throw (ex-info (str fn-name " requires 1 arg") {})))
-  (cons fn-name (mapv ->subexpression args)))
+  (cons fn-name (mapv ->statement args)))
 
 (defmethod ->function-call ::inline-conditional [fn-name args]
   (when-not (= 3 (count args))
@@ -76,6 +79,15 @@
 
 (defmethod ->function-call :default [fn-name args]
   (str fn-name "(" (str/join ", " (mapv ->subexpression args)) ")"))
+
+;; ->statement
+
+(defmethod ->statement :expression [[_ expression]]
+  (let [{:keys [fn-name args]} expression]
+    (->function-call fn-name args)))
+
+(defmethod ->statement :string [[_ string]]
+  string)
 
 ;; ->expression
 
@@ -132,9 +144,7 @@
                         in args))
           signature (str out " " name "(" args-list ")")]
       (into [signature]
-        (let [body-lines (mapv (fn [{:keys [fn-name args]}]
-                                 (->function-call fn-name args))
-                               body)]
+        (let [body-lines (mapv ->statement body)]
           (if (= 'void out)
             body-lines
             (conj
