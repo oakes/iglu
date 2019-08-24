@@ -86,8 +86,8 @@
   (let [{:keys [fn-name args]} expression]
     (->function-call fn-name args)))
 
-(defmethod ->statement :string [[_ string]]
-  string)
+(defmethod ->statement :default [val]
+  (->subexpression val))
 
 ;; ->expression
 

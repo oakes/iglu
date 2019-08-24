@@ -39,14 +39,11 @@
                          :string string?
                          :accessor (s/and vector? ::expression)
                          :expression ::expression))
-(s/def ::statement (s/or
-                      :expression ::expression
-                      :string string?))
 
 (s/def ::signature (s/cat :in (s/coll-of symbol?) :out symbol?))
 (s/def ::signatures (s/map-of symbol? ::signature))
 
-(s/def ::body (s/+ (s/spec ::statement)))
+(s/def ::body (s/+ (s/spec ::subexpression)))
 (s/def ::function (s/cat :args (s/coll-of symbol?) :body ::body))
 (s/def ::functions (s/map-of symbol? ::function))
 
