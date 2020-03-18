@@ -127,6 +127,12 @@
 (defn ->uniform [[name type]]
   (str "uniform " (parse-type type) " " name))
 
+(defn ->attribute [[name type]]
+  (str "attribute " (parse-type type) " " name))
+
+(defn ->varying [[name type]]
+  (str "varying " (parse-type type) " " name))
+
 (defn ->out [[name type]]
   (when type
     (str "out " (parse-type type) " " name)))
@@ -186,17 +192,18 @@
              :else 0)))))
 
 (defn iglu->glsl [{:keys [version precision
-                          uniforms inputs outputs
+                          uniforms attributes varyings inputs outputs
                           signatures functions fn-deps]
                    :as shader}]
   (->> (cond-> []
                version (conj (str "#version " version))
                precision (conj (str "precision " precision))
                uniforms (into (mapv ->uniform uniforms))
+               attributes (into (mapv ->attribute attributes))
+               varyings (into (mapv ->varying varyings))
                inputs (into (mapv ->in inputs))
                outputs (into (mapv ->out outputs))
                functions (into (mapv (partial ->function signatures)
                                  (sort-fns functions fn-deps))))
        (reduce (partial stringify 0) [])
        (str/join \newline)))
-
