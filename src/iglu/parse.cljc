@@ -10,6 +10,8 @@
 (s/def ::version string?)
 (s/def ::precision string?)
 (s/def ::uniforms ::declarations)
+(s/def ::attributes ::declarations)
+(s/def ::varyings ::declarations)
 (s/def ::inputs ::declarations)
 (s/def ::outputs ::declarations)
 
@@ -50,6 +52,8 @@
 (s/def ::shader (s/keys :opt-un [::version
                                  ::precision
                                  ::uniforms
+                                 ::attributes
+                                 ::varyings
                                  ::inputs
                                  ::outputs
                                  ::signatures
