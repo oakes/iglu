@@ -1,1 +1,2 @@
-{:open-url "http://localhost:5000/cljs/iglu.core"}
+{:open-url "http://localhost:5000/cljs/iglu.core"
+ :clean-outputs true}
