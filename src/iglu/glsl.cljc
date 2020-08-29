@@ -195,15 +195,20 @@
                           uniforms attributes varyings inputs outputs
                           signatures functions fn-deps]
                    :as shader}]
-  (->> (cond-> []
-               version (conj (str "#version " version))
-               precision (conj (str "precision " precision))
-               uniforms (into (mapv ->uniform uniforms))
-               attributes (into (mapv ->attribute attributes))
-               varyings (into (mapv ->varying varyings))
-               inputs (into (mapv ->in inputs))
-               outputs (into (mapv ->out outputs))
-               functions (into (mapv (partial ->function signatures)
-                                 (sort-fns functions fn-deps))))
-       (reduce (partial stringify 0) [])
-       (str/join \newline)))
+  (let [[fn-kind fn-val] functions]
+    (->> (cond-> []
+                 version (conj (str "#version " version))
+                 precision (conj (str "precision " precision))
+                 uniforms (into (mapv ->uniform uniforms))
+                 attributes (into (mapv ->attribute attributes))
+                 varyings (into (mapv ->varying varyings))
+                 inputs (into (mapv ->in inputs))
+                 outputs (into (mapv ->out outputs))
+                 (= fn-kind :iglu) (into (mapv (partial ->function signatures)
+                                           (sort-fns fn-val fn-deps))))
+         (reduce (partial stringify 0) [])
+         (str/join \newline)
+         ((fn [output]
+            (if (= fn-kind :glsl)
+              (str output \newline fn-val)
+              output))))))

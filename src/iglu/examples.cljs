@@ -96,5 +96,16 @@
                 (vec4
                   (.xy (* matrix (vec3 a_position 1)))
                   0 1))
-              (= v_color a_color))}})])
+              (= v_color a_color))}})]
+  ["As an escape hatch, you may optionally write your functions in GLSL."
+   (iglu->glsl
+     '{:version "300 es"
+       :inputs {a_position vec2}
+       :outputs {v_color vec4}
+       :functions "
+void main()
+{
+    gl_Position = vec4(a_position.x, a_position.y, 0.0, 1.0);
+    v_color = gl_Position * 0.5 + 0.5;
+}"})])
 

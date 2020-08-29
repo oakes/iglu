@@ -47,7 +47,9 @@
 
 (s/def ::body (s/+ (s/spec ::subexpression)))
 (s/def ::function (s/cat :args (s/coll-of symbol?) :body ::body))
-(s/def ::functions (s/map-of symbol? ::function))
+(s/def ::functions (s/or
+                     :iglu (s/map-of symbol? ::function)
+                     :glsl string?))
 
 (s/def ::shader (s/keys :opt-un [::version
                                  ::precision
@@ -56,8 +58,8 @@
                                  ::varyings
                                  ::inputs
                                  ::outputs
-                                 ::signatures
-                                 ::functions]))
+                                 ::signatures]
+                        :req-un [::functions]))
 
 (defn parse [content]
   (let [parsed-content (s/conform ::shader content)]
