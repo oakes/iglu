@@ -66,10 +66,11 @@
     (if (= parsed-content ::s/invalid)
       (throw (ex-info (expound/expound-str ::shader content) {}))
       (let [*fn-deps (atom {})]
-        (doseq [[fn-sym body] (:functions content)]
-          (binding [*fn-dependencies* *fn-deps
-                    *current-fn* fn-sym]
-            (s/conform ::function body)))
+        (when (map? (:functions content))
+          (doseq [[fn-sym body] (:functions content)]
+            (binding [*fn-dependencies* *fn-deps
+                      *current-fn* fn-sym]
+              (s/conform ::function body))))
         (assoc parsed-content
           :fn-deps @*fn-deps)))))
 
