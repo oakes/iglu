@@ -1,9 +1,9 @@
 {:paths ["src"]
- :deps {expound {:mvn/version "0.7.0"}}
+ :deps {expound/expound {:mvn/version "0.7.0"}}
  :aliases {:dev {:extra-deps {org.clojure/clojurescript {:mvn/version "1.10.764"}
-                              dynadoc {:mvn/version "RELEASE"}
+                              dynadoc/dynadoc {:mvn/version "RELEASE"}
                               com.bhauman/figwheel-main {:mvn/version "0.2.11"}}
                  :extra-paths ["dev-resources"]
                  :main-opts ["dev.clj"]}
-           :prod {:extra-deps {leiningen {:mvn/version "2.9.0"}}
+           :prod {:extra-deps {leiningen/leiningen {:mvn/version "2.9.0"}}
                   :main-opts ["prod.clj"]}}}
