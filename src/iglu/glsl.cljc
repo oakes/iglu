@@ -1,5 +1,6 @@
 (ns iglu.glsl
   (:require [clojure.string :as str]
+            [clojure.set :as set]
             [iglu.parse :as parse]))
 
 ;; multimethods
@@ -182,14 +183,31 @@
     (into lines (reduce (partial stringify level) [] line))))
 
 (defn sort-fns [functions fn-deps]
-  (->> functions
-       seq
-       (sort-by first
-         (fn [a b]
-           (cond
-             (contains? (fn-deps a) b) 1
-             (contains? (fn-deps b) a) -1
-             :else 0)))))
+  (let [;; get the transitive dependencies of each function
+        fn-trans-deps
+        (reduce-kv
+          (fn [m k v]
+            (loop [queue v
+                   deps #{}]
+              (if-let [fn-sym (first queue)]
+                (let [deps (conj deps fn-sym)
+                      queue (-> queue
+                                ;; add the deps of the fn to the queue
+                                (into (fn-deps fn-sym))
+                                ;; remove any deps that have already been processed
+                                (set/difference deps))]
+                  (recur queue deps))
+                (assoc m k deps))))
+          {}
+          fn-deps)]
+    (->> functions
+         seq
+         (sort-by first
+           (fn [a b]
+             (cond
+               (contains? (fn-trans-deps a) b) 1
+               (contains? (fn-trans-deps b) a) -1
+               :else 0))))))
 
 (defn iglu->glsl [{:keys [version precision
                           uniforms attributes varyings inputs outputs
